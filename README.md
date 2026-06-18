@@ -15,7 +15,7 @@ Extra:
 <img width="1009" height="572" alt="image" src="https://github.com/user-attachments/assets/3a0e1809-78e6-41e2-9082-6d80f02d2d92" />
 <img width="1344" height="545" alt="image" src="https://github.com/user-attachments/assets/52a827a1-3e62-4285-b476-e2f8878cc8a6" />
 <img width="1344" height="545" alt="image" src="https://github.com/user-attachments/assets/ee91c3c7-1816-444d-b956-a2b511972e6c" />
-![Uploading image.png…]()
+<img width="1211" height="700" alt="image" src="https://github.com/user-attachments/assets/c0254f3f-0ad1-4a2f-9610-0d34bb0d1500" />
 
 
 **HOTKEYS:**
