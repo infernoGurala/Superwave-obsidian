@@ -1,5 +1,5 @@
 # Superwave-obsidian
-A Plugin and theme for neurodivergents, made to align with intuition, eliminate the slow,general way to fell the freedom in use. Go in a wave, fast and quick, beautifully. 
+A Plugin and theme for neurodivergents, made to align with intuition, eliminate the slow,general way,use any feature in seconds. Go in wave, fast and quick, beautifully. 
 <img width="1211" height="700" alt="image" src="https://github.com/user-attachments/assets/cda48d7d-6ec0-40e3-bf4e-e1a4fb274d11" />
 
 <img width="1218" height="830" alt="image" src="https://github.com/user-attachments/assets/8fbe46fb-7b25-4a44-915e-ec790e518f1e" />
