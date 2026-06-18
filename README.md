@@ -1,24 +1,134 @@
-# Superwave-obsidian
-A Plugin and theme for neurodivergents, made to align with intuition, eliminate the slow,general way,use any feature in seconds. Go in wave, fast and quick, beautifully. 
-<img width="1211" height="700" alt="image" src="https://github.com/user-attachments/assets/cda48d7d-6ec0-40e3-bf4e-e1a4fb274d11" />
+# Superwave — Obsidian
 
-<img width="1218" height="830" alt="image" src="https://github.com/user-attachments/assets/8fbe46fb-7b25-4a44-915e-ec790e518f1e" />
+> A plugin and theme for minds that move fast.  
+> Aligned with intuition. Cut the slow, cut the clutter — and feel what it means to just go.
 
-Board View:
-----------
-<img width="1916" height="1002" alt="image" src="https://github.com/user-attachments/assets/d6942be6-4d63-4b6d-83a8-2b3b540387c0" />
-Interaction:
-<img width="1294" height="585" alt="image" src="https://github.com/user-attachments/assets/b15a888f-1152-4522-85ce-aae4714b20ff" />
-DASHBOARD VIEW:
-<img width="1294" height="585" alt="image" src="https://github.com/user-attachments/assets/31d93212-9f68-4fc9-a920-c640132876d3" />
-Extra:
-<img width="1009" height="572" alt="image" src="https://github.com/user-attachments/assets/3a0e1809-78e6-41e2-9082-6d80f02d2d92" />
-<img width="1344" height="545" alt="image" src="https://github.com/user-attachments/assets/52a827a1-3e62-4285-b476-e2f8878cc8a6" />
-<img width="1344" height="545" alt="image" src="https://github.com/user-attachments/assets/ee91c3c7-1816-444d-b956-a2b511972e6c" />
-<img width="1211" height="700" alt="image" src="https://github.com/user-attachments/assets/c0254f3f-0ad1-4a2f-9610-0d34bb0d1500" />
+---
 
+## What is Superwave?
 
-**HOTKEYS:**
-- Ctrl+SHIFT → Root folder
-- Alt+Shift → Global search (Files,Folders)
-- Normal search → Always active
+Superwave is a consolidated Obsidian plugin and theme built for **neurodivergent thinkers** — people who need their vault to respond fast, feel clear, and stay out of the way.
+
+It bundles three systems into one:
+
+- **Folder Dashboard** — a spatial, interactive view of your vault
+- **Typewriter Mode** — a distraction-free writing focus system
+- **Inferno Customizer Hub** — a unified styling and UI control panel
+
+No plugin juggling. No scattered settings. One system, tuned for flow.
+
+---
+
+## Features
+
+### 🗂 Folder Dashboard
+
+A full-screen, visual vault navigator — not just a file list.
+
+- **Three views per folder:** Dashboard · List · Board
+- **Board view** — spatial canvas with freely draggable cards; pan and zoom (25%–250%)
+- **Dashboard view** — structured overview with Folders and Files sections
+- **List view** — clean, scannable linear layout
+- **Per-folder memory** — each folder remembers its last view mode and card positions
+- **Live search** — always-active filter bar; type to instantly surface any file or folder
+- **Breadcrumb navigation** — click any level to jump back instantly
+- **Hotkeys:**
+  - `Ctrl + Shift` → Jump to root folder
+  - `Alt + Shift` → Global search (files and folders)
+
+---
+
+### ✍️ Typewriter Mode
+
+Keep your focus locked to the line you're writing.
+
+- Scroll-locks the active line to a configurable vertical offset
+- Optional dim for unfocused paragraphs
+- Fade lines intensity control
+- Current line highlight (box or underline style, custom colour)
+- "Keep lines above and below" mode for context-aware scrolling
+- Writing Focus mode with optional vignette and fullscreen
+- Max characters per line constraint
+- Pause dim-unfocused while scrolling or selecting
+
+---
+
+### 🎨 Inferno Customizer Hub
+
+One settings panel for everything visual.
+
+**Typography**
+- Title font family
+- Headings font family
+- Interface font family
+- Editor body font family
+
+**Interface Cleanup**
+- Hide attachments folder from explorer (configurable folder name)
+- Hide ribbon icons
+- Hide search and bookmarks from header bar
+- Hide file explorer top buttons
+
+**Content Display**
+- Mermaid diagram resize with configurable max-width
+- Custom coloured callouts toggle
+- Raw CSS override field for direct style injection
+
+**PDF Print**
+- Auto-generates a `pdf-theme-fix.css` snippet that respects your current theme when printing or exporting
+
+---
+
+## Installation
+
+> **Manual install only** — not yet on the Obsidian community plugins list.
+
+### Plugin
+
+1. Download `main.js`, `styles.css`, and `manifest.json` from this repo.
+2. Create the folder: `<your-vault>/.obsidian/plugins/inferno-customizer/`
+3. Place the three files inside it.
+4. Restart Obsidian.
+5. Go to **Settings → Community Plugins** and enable **Inferno Customizer Hub**.
+
+### Theme
+
+1. Download `theme.css` from `themes/inferno-theme/`.
+2. Place it in: `<your-vault>/.obsidian/themes/inferno-theme/`
+3. Go to **Settings → Appearance** and select **inferno-theme**.
+
+---
+
+## Screenshots
+
+**Board View**
+
+![Board View](screenshots/board-view.png)
+
+**Dashboard View**
+
+![Dashboard View](screenshots/dashboard-view.png)
+
+**Search**
+
+![Search](screenshots/search.png)
+
+---
+
+## Compatibility
+
+| Field | Value |
+|---|---|
+| Minimum Obsidian version | 0.15.0 |
+| Desktop | ✅ |
+| Mobile | ✅ |
+| Plugin ID | `inferno-customizer` |
+
+---
+
+## Project
+
+Built by [infernoGurala](https://github.com/infernoGurala) under the **Inferalis** brand.  
+Part of the *Inferno* creative system.
+
+> *"A different way, built for minds that move fast."*
