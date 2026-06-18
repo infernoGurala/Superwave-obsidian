@@ -22,6 +22,8 @@ No plugin juggling. No scattered settings. One system, tuned for flow.
 **Board View**
 
 ![Board View](screenshots/board-view.png)
+_Interaction_
+![interaction View](screenshots/interaction.png)
 
 **Dashboard View**
 
@@ -32,7 +34,10 @@ No plugin juggling. No scattered settings. One system, tuned for flow.
 ![Search](screenshots/search.png)
 - search is always active.
 - alt+shift to global file+folder search
-
+  
+**Theme & Font**
+![theme-1](screenshots/theme-1.png)
+![theme-2](screenshots/theme-2.png)
 
 ---
 
