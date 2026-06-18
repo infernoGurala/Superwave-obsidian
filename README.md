@@ -16,6 +16,21 @@ It bundles three systems into one:
 - **Inferno Customizer Hub** — a unified styling and UI control panel
 
 No plugin juggling. No scattered settings. One system, tuned for flow.
+---
+## Screenshots
+
+**Board View**
+
+![Board View](screenshots/board-view.png)
+
+**Dashboard View**
+
+![Dashboard View](screenshots/dashboard-view.png)
+
+**Search**
+
+![Search](screenshots/search.png)
+
 
 ---
 
@@ -40,16 +55,7 @@ A full-screen, visual vault navigator — not just a file list.
 
 ### ✍️ Typewriter Mode
 
-Keep your focus locked to the line you're writing.
-
-- Scroll-locks the active line to a configurable vertical offset
-- Optional dim for unfocused paragraphs
-- Fade lines intensity control
-- Current line highlight (box or underline style, custom colour)
-- "Keep lines above and below" mode for context-aware scrolling
-- Writing Focus mode with optional vignette and fullscreen
-- Max characters per line constraint
-- Pause dim-unfocused while scrolling or selecting
+Included [Type writer mode by Davis Riedel](https://github.com/davisriedel/obsidian-typewriter-mode)
 
 ---
 
@@ -99,22 +105,6 @@ One settings panel for everything visual.
 
 ---
 
-## Screenshots
-
-**Board View**
-
-![Board View](screenshots/board-view.png)
-
-**Dashboard View**
-
-![Dashboard View](screenshots/dashboard-view.png)
-
-**Search**
-
-![Search](screenshots/search.png)
-
----
-
 ## Compatibility
 
 | Field | Value |
@@ -128,7 +118,7 @@ One settings panel for everything visual.
 
 ## Project
 
-Built by [infernoGurala](https://github.com/infernoGurala) under the **Inferalis** brand.  
+Built by [infernoGurala](https://github.com/infernoGurala)
 Part of the *Inferno* creative system.
 
 > *"A different way, built for minds that move fast."*
