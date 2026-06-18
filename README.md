@@ -30,6 +30,8 @@ No plugin juggling. No scattered settings. One system, tuned for flow.
 **Search**
 
 ![Search](screenshots/search.png)
+- search is always active.
+- alt+shift to global file+folder search
 
 
 ---
