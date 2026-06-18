@@ -1,0 +1,144 @@
+{
+  "customStyles": {
+    "fontTitle": "",
+    "fontHeadings": "",
+    "fontInterface": "",
+    "fontText": "Sailec Light",
+    "hideAttachments": true,
+    "attachmentsPath": "attachments",
+    "hideIcons": true,
+    "hideSearchAndBookmarks": true,
+    "hideFileExplorerButtons": true,
+    "mermaidResize": true,
+    "mermaidMaxWidth": "600px",
+    "colouredCallouts": true,
+    "customCSS": ""
+  },
+  "typewriter": {
+    "version": null,
+    "isAnnounceUpdatesEnabled": true,
+    "isPluginActivated": true,
+    "isTypewriterScrollEnabled": true,
+    "isOnlyActivateAfterFirstInteractionEnabled": false,
+    "isOnlyMaintainTypewriterOffsetWhenReachedEnabled": false,
+    "isTypewriterOnlyUseCommandsEnabled": false,
+    "typewriterOffset": 0.5,
+    "isKeepLinesAboveAndBelowEnabled": false,
+    "linesAboveAndBelow": 5,
+    "isMaxCharsPerLineEnabled": false,
+    "maxCharsPerLine": 64,
+    "isDimUnfocusedEnabled": false,
+    "isDimHighlightListParentEnabled": false,
+    "isDimTableAsOneEnabled": true,
+    "dimUnfocusedMode": "paragraphs",
+    "dimUnfocusedEditorsBehavior": "dim",
+    "dimmedOpacity": 0.25,
+    "isPauseDimUnfocusedWhileScrollingEnabled": true,
+    "isPauseDimUnfocusedWhileSelectingEnabled": true,
+    "isHighlightCurrentLineEnabled": false,
+    "isFadeLinesEnabled": false,
+    "fadeLinesIntensity": 0.5,
+    "isHighlightCurrentLineOnlyInFocusedEditorEnabled": false,
+    "currentLineHighlightStyle": "box",
+    "currentLineHighlightUnderlineThickness": 1,
+    "currentLineHighlightColor-dark": "#444",
+    "currentLineHighlightColor-light": "#ddd",
+    "doesWritingFocusShowHeader": false,
+    "doesWritingFocusShowStatusBar": false,
+    "doesWritingFocusShowVignette": true,
+    "isWritingFocusFullscreen": true,
+    "writingFocusVignetteStyle": "box",
+    "isRestoreCursorPositionEnabled": false
+  },
+  "dashboard": {
+    "folderViewModes": {
+      "": "board",
+      "GARBAGE": "dashboard",
+      "SCRATCH": "dashboard"
+    },
+    "boardPositions": {
+      "": {
+        "Archives": {
+          "x": -281,
+          "y": 28
+        },
+        "INFerno": {
+          "x": 10,
+          "y": 23
+        },
+        "GARBAGE": {
+          "x": 472,
+          "y": 159
+        },
+        "KNOWLEDGE": {
+          "x": 639,
+          "y": 24
+        },
+        "PERMANENT": {
+          "x": -156,
+          "y": 177
+        },
+        "PROGRESS": {
+          "x": 7,
+          "y": 323
+        },
+        "PROJECTS": {
+          "x": 45,
+          "y": 311
+        },
+        "Statements.md": {
+          "x": 324,
+          "y": 20
+        },
+        "Utopia tpp.md": {
+          "x": 725,
+          "y": 167
+        },
+        "SCRATCH": {
+          "x": 631,
+          "y": 301
+        },
+        "STUDIO": {
+          "x": 154,
+          "y": 172
+        },
+        "03 Permanent notes": {
+          "x": 52,
+          "y": 170
+        },
+        "Reflection.md": {
+          "x": 331,
+          "y": 312
+        },
+        "Calender": {
+          "x": 452,
+          "y": 164
+        },
+        "FLEETING NOTES": {
+          "x": -68,
+          "y": 118
+        },
+        "PROGRESS NOTES": {
+          "x": -5,
+          "y": 340
+        },
+        "PERMANENT NOTES": {
+          "x": 259,
+          "y": 404
+        },
+        "Untitled.md": {
+          "x": -292,
+          "y": 390
+        },
+        "Obsidian feature test — master template.md": {
+          "x": -350,
+          "y": 221
+        },
+        "Welcome.md": {
+          "x": 249,
+          "y": 184
+        }
+      }
+    }
+  }
+}
