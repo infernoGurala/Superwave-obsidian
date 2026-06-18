@@ -12,6 +12,6 @@ Extra:
 <img width="1009" height="572" alt="image" src="https://github.com/user-attachments/assets/3a0e1809-78e6-41e2-9082-6d80f02d2d92" />
 
 **HOTKEYS:**
-Ctrl+SHIFT → Root folder
-Alt+Shift → Global search (Files,Folders)
-Normal search → Always active
+- Ctrl+SHIFT → Root folder
+- Alt+Shift → Global search (Files,Folders)
+- Normal search → Always active
