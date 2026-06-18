@@ -1,5 +1,8 @@
 # Superwave-obsidian
 A Plugin and theme for neurodivergents, made to align with intuition, eliminate the slow,general way to fell the freedom in use. Go in a wave, fast and quick, beautifully. 
+<img width="1211" height="700" alt="image" src="https://github.com/user-attachments/assets/cda48d7d-6ec0-40e3-bf4e-e1a4fb274d11" />
+
+<img width="1218" height="830" alt="image" src="https://github.com/user-attachments/assets/8fbe46fb-7b25-4a44-915e-ec790e518f1e" />
 
 Board View:
 ----------
@@ -11,6 +14,8 @@ DASHBOARD VIEW:
 Extra:
 <img width="1009" height="572" alt="image" src="https://github.com/user-attachments/assets/3a0e1809-78e6-41e2-9082-6d80f02d2d92" />
 <img width="1344" height="545" alt="image" src="https://github.com/user-attachments/assets/52a827a1-3e62-4285-b476-e2f8878cc8a6" />
+<img width="1344" height="545" alt="image" src="https://github.com/user-attachments/assets/ee91c3c7-1816-444d-b956-a2b511972e6c" />
+![Uploading image.png…]()
 
 
 **HOTKEYS:**
