@@ -812,3 +812,105 @@
   color: var(--text-faint);
 }
 
+/* Premium Modal Styles for Creating Items */
+.dashboard-create-modal {
+  background: var(--background-primary) !important;
+  border: 1px solid var(--premium-card-border) !important;
+  border-radius: 16px !important;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4) !important;
+  padding: 24px !important;
+  max-width: 420px !important;
+}
+
+.dashboard-create-modal .modal-title {
+  margin-top: 0;
+  margin-bottom: 20px;
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--text-normal);
+  letter-spacing: -0.01em;
+}
+
+.dashboard-create-modal .modal-form {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.dashboard-create-modal .modal-form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.dashboard-create-modal .modal-label {
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-muted);
+}
+
+.dashboard-create-modal .modal-select,
+.dashboard-create-modal .modal-input {
+  background: rgba(255, 255, 255, 0.03) !important;
+  border: 1px solid var(--premium-card-border) !important;
+  border-radius: 8px !important;
+  padding: 10px 12px !important;
+  color: var(--text-normal) !important;
+  font-size: 13px !important;
+  outline: none !important;
+  transition: all 0.2s ease !important;
+  width: 100% !important;
+  height: 38px !important;
+}
+
+.theme-light .dashboard-create-modal .modal-select,
+.theme-light .dashboard-create-modal .modal-input {
+  background: rgba(0, 0, 0, 0.02) !important;
+}
+
+.dashboard-create-modal .modal-select:focus,
+.dashboard-create-modal .modal-input:focus {
+  border-color: var(--interactive-accent) !important;
+  background: rgba(255, 255, 255, 0.05) !important;
+}
+
+.dashboard-create-modal .modal-buttons {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 8px;
+}
+
+.dashboard-create-modal .modal-btn {
+  border-radius: 8px !important;
+  padding: 8px 16px !important;
+  font-size: 13px !important;
+  font-weight: 600 !important;
+  cursor: pointer !important;
+  transition: all 0.15s ease !important;
+  height: 36px !important;
+}
+
+.dashboard-create-modal .btn-cancel {
+  background: transparent !important;
+  border: 1px solid var(--premium-card-border) !important;
+  color: var(--text-muted) !important;
+}
+
+.dashboard-create-modal .btn-cancel:hover {
+  background: rgba(255, 255, 255, 0.05) !important;
+  color: var(--text-normal) !important;
+}
+
+.dashboard-create-modal .btn-create {
+  background: var(--interactive-accent) !important;
+  border: none !important;
+  color: var(--text-on-accent) !important;
+}
+
+.dashboard-create-modal .btn-create:hover {
+  filter: brightness(1.1);
+}
+

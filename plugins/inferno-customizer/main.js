@@ -39,9 +39,107 @@ const FolderDashboardPluginClass = (function() {
   const exports = {};
   const module = { exports };
   
-  const { Plugin, ItemView, TFolder, TFile, setIcon, MarkdownView } = require('obsidian');
+  const { Plugin, ItemView, TFolder, TFile, setIcon, MarkdownView, Modal, Notice } = require('obsidian');
 
 const VIEW_TYPE = "folder-dashboard-view";
+
+class CreateItemModal extends Modal {
+  constructor(app, currentPath, plugin, onViewRefresh) {
+    super(app);
+    this.currentPath = currentPath;
+    this.plugin = plugin;
+    this.onViewRefresh = onViewRefresh;
+  }
+
+  onOpen() {
+    const { contentEl } = this;
+    contentEl.empty();
+    
+    contentEl.addClass("dashboard-create-modal");
+
+    contentEl.createEl("h2", { text: "Create New Item", cls: "modal-title" });
+
+    const formEl = contentEl.createEl("div", { cls: "modal-form" });
+
+    // Type Selector (File or Folder)
+    const typeGroup = formEl.createEl("div", { cls: "modal-form-group" });
+    typeGroup.createEl("label", { text: "Type", cls: "modal-label" });
+    const typeSelect = typeGroup.createEl("select", { cls: "modal-select" });
+    typeSelect.createEl("option", { text: "Note (.md)", value: "file" });
+    typeSelect.createEl("option", { text: "Folder", value: "folder" });
+
+    // Name Input
+    const nameGroup = formEl.createEl("div", { cls: "modal-form-group" });
+    nameGroup.createEl("label", { text: "Name", cls: "modal-label" });
+    const nameInput = nameGroup.createEl("input", {
+      type: "text",
+      placeholder: "Enter name...",
+      cls: "modal-input"
+    });
+
+    // Button Row
+    const buttonRow = formEl.createEl("div", { cls: "modal-buttons" });
+    const cancelBtn = buttonRow.createEl("button", { text: "Cancel", cls: "modal-btn btn-cancel" });
+    const createBtn = buttonRow.createEl("button", { text: "Create", cls: "modal-btn btn-create" });
+
+    // Focus input on load
+    setTimeout(() => nameInput.focus(), 50);
+
+    const submit = async () => {
+      const name = nameInput.value.trim();
+      if (!name) {
+        new Notice("Please enter a name");
+        return;
+      }
+      const type = typeSelect.value;
+      let filename = name;
+      if (type === "file" && !filename.endsWith(".md")) {
+        filename += ".md";
+      }
+      
+      const parentPath = this.currentPath;
+      const targetPath = parentPath ? `${parentPath}/${filename}` : filename;
+
+      // Check if already exists
+      const existing = this.app.vault.getAbstractFileByPath(targetPath);
+      if (existing) {
+        new Notice("A file or folder with this name already exists");
+        return;
+      }
+
+      try {
+        if (type === "folder") {
+          await this.app.vault.createFolder(targetPath);
+          new Notice(`Folder "${name}" created successfully`);
+        } else {
+          await this.app.vault.create(targetPath, "");
+          new Notice(`Note "${name}" created successfully`);
+        }
+        this.onViewRefresh();
+        this.close();
+      } catch (err) {
+        new Notice(`Error creating item: ${err.message}`);
+      }
+    };
+
+    nameInput.addEventListener("keydown", (e) => {
+      if (e.key === "Enter") {
+        e.preventDefault();
+        submit();
+      } else if (e.key === "Escape") {
+        this.close();
+      }
+    });
+
+    createBtn.addEventListener("click", () => submit());
+    cancelBtn.addEventListener("click", () => this.close());
+  }
+
+  onClose() {
+    const { contentEl } = this;
+    contentEl.empty();
+  }
+}
 
 class FolderDashboardView extends ItemView {
   constructor(leaf, plugin) {
@@ -96,6 +194,21 @@ class FolderDashboardView extends ItemView {
 
     container.addEventListener("click", () => {
       this.searchInput.focus();
+    });
+
+    container.addEventListener("dblclick", (e) => {
+      if (
+        e.target.closest(".dashboard-card") ||
+        e.target.closest(".dashboard-list-row") ||
+        e.target.closest("button") ||
+        e.target.closest("input") ||
+        e.target.closest(".dashboard-breadcrumbs") ||
+        e.target.closest(".dashboard-hud-controls")
+      ) {
+        return;
+      }
+      e.stopPropagation();
+      new CreateItemModal(this.app, this.currentPath, this.plugin, () => this.render()).open();
     });
 
     this.searchInput.addEventListener("blur", () => {
@@ -464,9 +577,14 @@ class FolderDashboardView extends ItemView {
         this.sectionsContainerEl.releasePointerCapture(e.pointerId);
       });
       
-      // Zoom handler
+      // Zoom & scroll handler on board viewport
       this.sectionsContainerEl.addEventListener("wheel", (e) => {
+        // Prevent default behavior to:
+        // 1. Prevent scrolling the parent page/element.
+        // 2. Prevent Ctrl+Wheel from triggering Obsidian's native 20% window zoom.
         e.preventDefault();
+        e.stopPropagation();
+
         const rect = this.sectionsContainerEl.getBoundingClientRect();
         const mouseX = e.clientX - rect.left;
         const mouseY = e.clientY - rect.top;
@@ -476,24 +594,40 @@ class FolderDashboardView extends ItemView {
         const boardY = (mouseY - this.panOffset.y) / this.zoom;
         
         // Normalize delta to pixels
+        let dx = e.deltaX;
         let dy = e.deltaY;
         if (e.deltaMode === 1) {
-          dy *= 40; // Normalize line delta to pixel delta
+          dx *= 40;
+          dy *= 40;
         } else if (e.deltaMode === 2) {
-          dy *= 800; // Normalize page delta to pixel delta
+          dx *= 800;
+          dy *= 800;
+        }
+
+        // If Ctrl key is pressed (or pinch zoom on trackpad, which sets e.ctrlKey = true)
+        if (e.ctrlKey) {
+          // Smooth zoom
+          const zoomIntensity = 0.0015;
+          let newZoom = this.zoom * Math.exp(-dy * zoomIntensity);
+          newZoom = Math.min(Math.max(0.25, newZoom), 2.5);
+          
+          // Adjust panning to keep mouse location fixed in space
+          const newPanX = mouseX - boardX * newZoom;
+          const newPanY = mouseY - boardY * newZoom;
+          
+          this.zoom = newZoom;
+          this.panOffset = { x: newPanX, y: newPanY };
+        } else {
+          // Normal scroll: pan the canvas smoothly
+          if (e.shiftKey) {
+            this.panOffset.x -= dy;
+            this.panOffset.y -= dx;
+          } else {
+            this.panOffset.x -= dx;
+            this.panOffset.y -= dy;
+          }
         }
         
-        // Smooth geometric scaling
-        const zoomIntensity = 0.0012;
-        let newZoom = this.zoom * Math.exp(-dy * zoomIntensity);
-        newZoom = Math.min(Math.max(0.25, newZoom), 2.5);
-        
-        // Adjust panning to keep mouse location fixed in space
-        const newPanX = mouseX - boardX * newZoom;
-        const newPanY = mouseY - boardY * newZoom;
-        
-        this.zoom = newZoom;
-        this.panOffset = { x: newPanX, y: newPanY };
         this.updateZoomAndPanStyles();
       }, { passive: false });
 
@@ -516,6 +650,7 @@ class FolderDashboardView extends ItemView {
         this.filteredItems.forEach((item, index) => {
           const isSelected = this.selectedIndex === index;
           const isFolder = item instanceof TFolder;
+          const typeStr = isFolder ? "folder" : "file";
           
           const row = tbody.createEl("tr", {
             cls: `dashboard-list-row ${typeStr}-row ${isSelected ? "is-selected" : ""}`
@@ -812,10 +947,34 @@ class FolderDashboardPlugin extends Plugin {
         this.updateFileBreadcrumbs(activeLeaf);
       }
     });
+
+    this.registerEvent(
+      this.app.vault.on("create", (file) => {
+        this.refreshActiveViews();
+      })
+    );
+    this.registerEvent(
+      this.app.vault.on("delete", (file) => {
+        this.refreshActiveViews();
+      })
+    );
+    this.registerEvent(
+      this.app.vault.on("rename", (file, oldPath) => {
+        this.refreshActiveViews();
+      })
+    );
   }
 
   async saveSettings() {
     await this.saveData(this.settings);
+  }
+
+  refreshActiveViews() {
+    this.app.workspace.getLeavesOfType(VIEW_TYPE).forEach((leaf) => {
+      if (leaf.view instanceof FolderDashboardView) {
+        leaf.view.render();
+      }
+    });
   }
 
   async activateView() {
@@ -949,6 +1108,227 @@ module.exports = FolderDashboardPlugin;
   
   return module.exports.default || module.exports;
 })();
+
+// =========================================================================
+// NEXT WORD PREDICTION SYSTEM
+// =========================================================================
+const { Decoration, ViewPlugin, WidgetType, keymap } = require('@codemirror/view');
+
+class GhostTextWidget extends WidgetType {
+  constructor(text) {
+    super();
+    this.text = text;
+  }
+  toDOM() {
+    const span = document.createElement("span");
+    span.className = "cm-ghost-text";
+    span.textContent = this.text;
+    span.style.color = "var(--text-faint)";
+    span.style.opacity = "0.5";
+    span.style.fontStyle = "italic";
+    span.style.pointerEvents = "none";
+    return span;
+  }
+}
+
+class PredictionEngine {
+  constructor(app) {
+    this.app = app;
+    this.transitions = {}; // bigram transition counts
+    this.wordFreq = {};    // single word frequencies
+    this.vocabulary = new Set();
+    this.commonWords = [
+      'the', 'and', 'to', 'of', 'a', 'in', 'is', 'that', 'it', 'he', 'was', 'for', 'on', 'are', 'as', 'with', 
+      'his', 'they', 'i', 'at', 'be', 'this', 'have', 'from', 'or', 'one', 'had', 'by', 'word', 'but', 'not', 
+      'what', 'all', 'were', 'we', 'when', 'your', 'can', 'said', 'there', 'use', 'an', 'each', 'which', 'she', 
+      'do', 'how', 'their', 'if', 'will', 'up', 'other', 'about', 'out', 'many', 'then', 'them', 'these', 'so', 
+      'some', 'her', 'would', 'make', 'like', 'him', 'into', 'time', 'has', 'look', 'two', 'more', 'write', 
+      'go', 'see', 'number', 'no', 'way', 'could', 'people', 'my', 'than', 'first', 'water', 'been', 'call', 
+      'who', 'oil', 'its', 'now', 'find', 'long', 'down', 'day', 'did', 'get', 'come', 'made', 'may', 'part', 
+      'here', 'new', 'work', 'place', 'take', 'years', 'live', 'back', 'give', 'most', 'very', 'after', 
+      'things', 'our', 'just', 'name', 'good', 'sentence', 'man', 'think', 'say', 'great', 'where', 'help', 
+      'through', 'much', 'before', 'line', 'right', 'too', 'mean', 'old', 'any', 'same', 'tell', 'boy', 
+      'follow', 'came', 'want', 'show', 'also', 'around', 'form', 'three', 'small', 'another', 'large', 
+      'even', 'because', 'must', 'big', 'such', 'different', 'home', 'us', 'move', 'try', 'kind', 'hand', 
+      'picture', 'again', 'change', 'off', 'play', 'spell', 'air', 'away', 'animal', 'house', 'point', 
+      'page', 'letter', 'mother', 'answer', 'found', 'study', 'still', 'learn', 'should', 'world'
+    ];
+  }
+
+  async buildModelFromActiveFile() {
+    const activeFile = this.app.workspace.getActiveFile();
+    if (!activeFile) return;
+
+    try {
+      const content = await this.app.vault.read(activeFile);
+      this.buildModel(content);
+    } catch (e) {
+      console.warn("Failed to build prediction model:", e);
+    }
+  }
+
+  buildModel(content) {
+    this.transitions = {};
+    this.wordFreq = {};
+    this.vocabulary.clear();
+
+    const rawWords = content.toLowerCase().split(/[^a-zA-Z0-9'-]+/).filter(w => w.length > 0);
+    
+    for (let i = 0; i < rawWords.length; i++) {
+      const w = rawWords[i];
+      this.wordFreq[w] = (this.wordFreq[w] || 0) + 1;
+      this.vocabulary.add(w);
+
+      if (i < rawWords.length - 1) {
+        const nextW = rawWords[i + 1];
+        if (!this.transitions[w]) this.transitions[w] = {};
+        this.transitions[w][nextW] = (this.transitions[w][nextW] || 0) + 1;
+      }
+    }
+  }
+
+  predict(lastWord, prefix) {
+    // 1. Try Bigram Prediction
+    if (lastWord && this.transitions[lastWord]) {
+      const candidates = this.transitions[lastWord];
+      let bestWord = null;
+      let maxCount = -1;
+
+      for (const candidate in candidates) {
+        if (prefix && !candidate.startsWith(prefix)) continue;
+        if (candidates[candidate] > maxCount) {
+          maxCount = candidates[candidate];
+          bestWord = candidate;
+        }
+      }
+      if (bestWord) return bestWord;
+    }
+
+    // 2. Try Current Word Prefix Matching
+    if (prefix) {
+      let bestWord = null;
+      let maxFreq = -1;
+
+      for (const word of this.vocabulary) {
+        if (word.startsWith(prefix) && word !== prefix) {
+          const freq = this.wordFreq[word] || 0;
+          if (freq > maxFreq) {
+            maxFreq = freq;
+            bestWord = word;
+          }
+        }
+      }
+      if (bestWord) return bestWord;
+
+      // 3. Fallback to Common Words
+      for (const word of this.commonWords) {
+        if (word.startsWith(prefix) && word !== prefix) {
+          return word;
+        }
+      }
+    }
+
+    return null;
+  }
+}
+
+// We will pass the main plugin instance to the prediction plugin
+let activeCustomizerPlugin = null;
+
+const predictionViewPlugin = ViewPlugin.fromClass(class {
+  constructor(view) {
+    this.view = view;
+    this.suggestion = "";
+    this.decorations = Decoration.none;
+  }
+
+  update(update) {
+    if (!activeCustomizerPlugin || !activeCustomizerPlugin.settings?.customStyles?.enablePrediction) {
+      this.suggestion = "";
+      this.decorations = Decoration.none;
+      return;
+    }
+
+    if (update.docChanged || update.selectionSet) {
+      this.updateSuggestion();
+    }
+  }
+
+  updateSuggestion() {
+    const state = this.view.state;
+    if (state.selection.ranges.length !== 1 || !state.selection.main.empty) {
+      this.suggestion = "";
+      this.decorations = Decoration.none;
+      return;
+    }
+
+    const pos = state.selection.main.head;
+    const line = state.doc.lineAt(pos);
+    const lineText = line.text;
+    const col = pos - line.from;
+
+    const textBefore = lineText.slice(0, col);
+    
+    // Extract last word and the prefix being typed
+    const match = textBefore.match(/([a-zA-Z0-9'-]+)\s+([a-zA-Z0-9'-]*)$/);
+    const singleWordMatch = textBefore.match(/^\s*([a-zA-Z0-9'-]*)$/);
+    
+    let lastWord = "";
+    let currentPrefix = "";
+
+    if (match) {
+      lastWord = match[1].toLowerCase();
+      currentPrefix = match[2].toLowerCase();
+    } else if (singleWordMatch) {
+      currentPrefix = singleWordMatch[1].toLowerCase();
+    }
+
+    if (!lastWord && currentPrefix.length < 2) {
+      this.suggestion = "";
+      this.decorations = Decoration.none;
+      return;
+    }
+
+    const predictedWord = activeCustomizerPlugin.predictionEngine.predict(lastWord, currentPrefix);
+
+    if (predictedWord && predictedWord.startsWith(currentPrefix) && predictedWord !== currentPrefix) {
+      this.suggestion = predictedWord.slice(currentPrefix.length);
+      
+      const widget = Decoration.widget({
+        widget: new GhostTextWidget(this.suggestion),
+        side: 1
+      });
+      this.decorations = Decoration.set([widget.range(pos)]);
+    } else {
+      this.suggestion = "";
+      this.decorations = Decoration.none;
+    }
+  }
+}, {
+  decorations: v => v.decorations
+});
+
+const predictionKeymap = keymap.of([
+  {
+    key: "Tab",
+    run: (view) => {
+      if (!activeCustomizerPlugin || !activeCustomizerPlugin.settings?.customStyles?.enablePrediction) {
+        return false;
+      }
+      const plugin = view.plugin(predictionViewPlugin);
+      if (plugin && plugin.suggestion) {
+        const suggestion = plugin.suggestion;
+        const pos = view.state.selection.main.head;
+        view.dispatch({
+          changes: { from: pos, to: pos, insert: suggestion },
+          selection: { anchor: pos + suggestion.length }
+        });
+        return true;
+      }
+      return false;
+    }
+  }
+]);
 
 // =========================================================================
 // MAIN WRAPPER PLUGIN: Inferno Customizer Hub
