@@ -65,6 +65,14 @@ A full-screen, visual vault navigator — not just a file list.
 Included [Type writer mode by Davis Riedel](https://github.com/davisriedel/obsidian-typewriter-mode)
 
 ---
+### ✍️ Text prediciton AI
+> Prediction of text, by local LLM. 
+![theme-1](screenshots/AI-text.png)
+
+> Mistake correction: <img width="1220" height="734" alt="image" src="https://github.com/user-attachments/assets/637d95bb-bc08-4540-aab6-da05bdc717a1" />
+
+---
+
 
 ### 🎨 Inferno Customizer Hub
 
