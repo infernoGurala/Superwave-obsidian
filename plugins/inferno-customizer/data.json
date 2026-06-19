@@ -12,7 +12,18 @@
     "mermaidResize": true,
     "mermaidMaxWidth": "600px",
     "colouredCallouts": true,
-    "customCSS": ""
+    "customCSS": "",
+    "enablePrediction": true,
+    "predictionProvider": "ollama",
+    "predictionApiKeyGemini": "",
+    "predictionModelGemini": "gemini-1.5-flash",
+    "predictionApiKeyOpenAI": "",
+    "predictionModelOpenAI": "gpt-4o-mini",
+    "predictionOllamaUrl": "http://localhost:11434",
+    "predictionModelOllama": "gemma4:e4b",
+    "predictionMaxTokens": 25,
+    "predictionDebounce": 300,
+    "enableMistakeCorrector": true
   },
   "typewriter": {
     "version": null,

@@ -3889,19 +3889,19 @@ settings:
   --text-muted: #b1b1b1 !important;
   --text-faint: #7f7f7f !important;
 
-  --accent-h: 0 !important;
-  --accent-s: 0% !important;
-  --accent-l: 85% !important;
+  --accent-h: 0;
+  --accent-s: 0%;
+  --accent-l: 85%;
 
-  --color-accent: #dadada !important;
-  --color-accent-hsl: 0, 0%, 85% !important;
-  --color-accent-1: #dadada !important;
-  --color-accent-2: #ffffff !important;
-  --interactive-accent: #dadada !important;
-  --interactive-accent-hover: #ffffff !important;
-  --interactive-accent-hsl: 0, 0%, 85% !important;
-  --text-accent: #dadada !important;
-  --text-accent-hover: #ffffff !important;
+  --color-accent: #dadada;
+  --color-accent-hsl: 0, 0%, 85%;
+  --color-accent-1: #dadada;
+  --color-accent-2: #ffffff;
+  --interactive-accent: #dadada;
+  --interactive-accent-hover: #ffffff;
+  --interactive-accent-hsl: 0, 0%, 85%;
+  --text-accent: #dadada;
+  --text-accent-hover: #ffffff;
   --text-on-accent: #0a0a0a !important;
   --text-on-accent-inverted: #ffffff !important;
   --nav-item-color-active: #0a0a0a !important;
@@ -4147,8 +4147,19 @@ settings:
 }
 
 body.theme-dark, body.theme-light {
-  --accent-color: #47a976 !important;
-  --color-accent: #47a976 !important;
-  --color-accent-hsl: 149, 41%, 47% !important;
-  --interactive-accent: #47a976 !important;
+  --accent-color: #47a976;
+  --color-accent: #47a976;
+  --color-accent-hsl: 149, 41%, 47%;
+  --interactive-accent: #47a976;
+}
+
+/* Set vertical tab nav item icons to use the theme's active accent color */
+.vertical-tab-nav-item .nav-item-icon {
+  color: var(--interactive-accent) !important;
+  opacity: 0.7;
+  transition: opacity 0.15s ease;
+}
+.vertical-tab-nav-item.is-active .nav-item-icon,
+.vertical-tab-nav-item:hover .nav-item-icon {
+  opacity: 1 !important;
 }

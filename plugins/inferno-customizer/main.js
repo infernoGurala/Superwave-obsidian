@@ -1,4 +1,4 @@
-const { Plugin, PluginSettingTab, Setting } = require('obsidian');
+const { Plugin, PluginSettingTab, Setting, Modal, Notice } = require('obsidian');
 
 // =========================================================================
 // SUB-PLUGIN 1: Typewriter Mode (IIFE Wrapped)
@@ -218,6 +218,80 @@ class FolderDashboardView extends ItemView {
         }
       }, 50);
     });
+
+    // Register Board pan & zoom listeners once (only active in "board" mode)
+    this.sectionsContainerEl.addEventListener("pointerdown", (e) => {
+      if (this.getViewMode() !== "board") return;
+      if (e.target !== this.sectionsContainerEl && !e.target.classList.contains("dashboard-board-canvas")) return;
+      this.isPanning = true;
+      this.sectionsContainerEl.setPointerCapture(e.pointerId);
+      this.panStart = {
+        x: e.clientX - this.panOffset.x,
+        y: e.clientY - this.panOffset.y
+      };
+    });
+
+    this.sectionsContainerEl.addEventListener("pointermove", (e) => {
+      if (this.getViewMode() !== "board") return;
+      if (!this.isPanning) return;
+      const dx = e.clientX - this.panStart.x;
+      const dy = e.clientY - this.panStart.y;
+      this.panOffset = { x: dx, y: dy };
+      this.updateZoomAndPanStyles();
+    });
+
+    this.sectionsContainerEl.addEventListener("pointerup", (e) => {
+      if (this.getViewMode() !== "board") return;
+      if (!this.isPanning) return;
+      this.isPanning = false;
+      this.sectionsContainerEl.releasePointerCapture(e.pointerId);
+    });
+
+    this.sectionsContainerEl.addEventListener("wheel", (e) => {
+      if (this.getViewMode() !== "board") return;
+      // Prevent default page scroll and native Ctrl+Wheel window zooming
+      e.preventDefault();
+      e.stopPropagation();
+
+      const rect = this.sectionsContainerEl.getBoundingClientRect();
+      const mouseX = e.clientX - rect.left;
+      const mouseY = e.clientY - rect.top;
+      
+      const boardX = (mouseX - this.panOffset.x) / this.zoom;
+      const boardY = (mouseY - this.panOffset.y) / this.zoom;
+      
+      let dx = e.deltaX;
+      let dy = e.deltaY;
+      if (e.deltaMode === 1) {
+        dx *= 40;
+        dy *= 40;
+      } else if (e.deltaMode === 2) {
+        dx *= 800;
+        dy *= 800;
+      }
+
+      if (e.ctrlKey) {
+        const zoomIntensity = 0.0015;
+        let newZoom = this.zoom * Math.exp(-dy * zoomIntensity);
+        newZoom = Math.min(Math.max(0.25, newZoom), 2.5);
+        
+        const newPanX = mouseX - boardX * newZoom;
+        const newPanY = mouseY - boardY * newZoom;
+        
+        this.zoom = newZoom;
+        this.panOffset = { x: newPanX, y: newPanY };
+      } else {
+        if (e.shiftKey) {
+          this.panOffset.x -= dy;
+          this.panOffset.y -= dx;
+        } else {
+          this.panOffset.x -= dx;
+          this.panOffset.y -= dy;
+        }
+      }
+      
+      this.updateZoomAndPanStyles();
+    }, { passive: false });
 
     this.render();
     setTimeout(() => {
@@ -552,84 +626,7 @@ class FolderDashboardView extends ItemView {
         });
       }
 
-      // Pan handlers on the viewport background
-      this.sectionsContainerEl.addEventListener("pointerdown", (e) => {
-        if (e.target !== this.sectionsContainerEl && !e.target.classList.contains("dashboard-board-canvas")) return;
-        this.isPanning = true;
-        this.sectionsContainerEl.setPointerCapture(e.pointerId);
-        this.panStart = {
-          x: e.clientX - this.panOffset.x,
-          y: e.clientY - this.panOffset.y
-        };
-      });
-      
-      this.sectionsContainerEl.addEventListener("pointermove", (e) => {
-        if (!this.isPanning) return;
-        const dx = e.clientX - this.panStart.x;
-        const dy = e.clientY - this.panStart.y;
-        this.panOffset = { x: dx, y: dy };
-        this.updateZoomAndPanStyles();
-      });
-      
-      this.sectionsContainerEl.addEventListener("pointerup", (e) => {
-        if (!this.isPanning) return;
-        this.isPanning = false;
-        this.sectionsContainerEl.releasePointerCapture(e.pointerId);
-      });
-      
-      // Zoom & scroll handler on board viewport
-      this.sectionsContainerEl.addEventListener("wheel", (e) => {
-        // Prevent default behavior to:
-        // 1. Prevent scrolling the parent page/element.
-        // 2. Prevent Ctrl+Wheel from triggering Obsidian's native 20% window zoom.
-        e.preventDefault();
-        e.stopPropagation();
 
-        const rect = this.sectionsContainerEl.getBoundingClientRect();
-        const mouseX = e.clientX - rect.left;
-        const mouseY = e.clientY - rect.top;
-        
-        // Mouse coordinates relative to the unscaled canvas
-        const boardX = (mouseX - this.panOffset.x) / this.zoom;
-        const boardY = (mouseY - this.panOffset.y) / this.zoom;
-        
-        // Normalize delta to pixels
-        let dx = e.deltaX;
-        let dy = e.deltaY;
-        if (e.deltaMode === 1) {
-          dx *= 40;
-          dy *= 40;
-        } else if (e.deltaMode === 2) {
-          dx *= 800;
-          dy *= 800;
-        }
-
-        // If Ctrl key is pressed (or pinch zoom on trackpad, which sets e.ctrlKey = true)
-        if (e.ctrlKey) {
-          // Smooth zoom
-          const zoomIntensity = 0.0015;
-          let newZoom = this.zoom * Math.exp(-dy * zoomIntensity);
-          newZoom = Math.min(Math.max(0.25, newZoom), 2.5);
-          
-          // Adjust panning to keep mouse location fixed in space
-          const newPanX = mouseX - boardX * newZoom;
-          const newPanY = mouseY - boardY * newZoom;
-          
-          this.zoom = newZoom;
-          this.panOffset = { x: newPanX, y: newPanY };
-        } else {
-          // Normal scroll: pan the canvas smoothly
-          if (e.shiftKey) {
-            this.panOffset.x -= dy;
-            this.panOffset.y -= dx;
-          } else {
-            this.panOffset.x -= dx;
-            this.panOffset.y -= dy;
-          }
-        }
-        
-        this.updateZoomAndPanStyles();
-      }, { passive: false });
 
     } else if (viewMode === "list") {
       const listContainer = this.sectionsContainerEl.createEl("div", { cls: "dashboard-list-container" });
@@ -1112,7 +1109,8 @@ module.exports = FolderDashboardPlugin;
 // =========================================================================
 // NEXT WORD PREDICTION SYSTEM
 // =========================================================================
-const { Decoration, ViewPlugin, WidgetType, keymap } = require('@codemirror/view');
+const { Decoration, ViewPlugin, WidgetType, keymap, EditorView } = require('@codemirror/view');
+const { requestUrl } = require('obsidian');
 
 class GhostTextWidget extends WidgetType {
   constructor(text) {
@@ -1131,10 +1129,29 @@ class GhostTextWidget extends WidgetType {
   }
 }
 
+class CorrectionWidget extends WidgetType {
+  constructor(replacement) {
+    super();
+    this.replacement = replacement;
+  }
+  toDOM() {
+    const span = document.createElement("span");
+    span.className = "cm-correction-text";
+    span.textContent = this.replacement;
+    span.style.color = "var(--text-accent)";
+    span.style.opacity = "0.8";
+    span.style.fontStyle = "italic";
+    span.style.textDecoration = "underline dashed";
+    span.style.pointerEvents = "none";
+    return span;
+  }
+}
+
 class PredictionEngine {
   constructor(app) {
     this.app = app;
     this.transitions = {}; // bigram transition counts
+    this.trigrams = {};    // trigram transition counts
     this.wordFreq = {};    // single word frequencies
     this.vocabulary = new Set();
     this.commonWords = [
@@ -1153,6 +1170,80 @@ class PredictionEngine {
       'picture', 'again', 'change', 'off', 'play', 'spell', 'air', 'away', 'animal', 'house', 'point', 
       'page', 'letter', 'mother', 'answer', 'found', 'study', 'still', 'learn', 'should', 'world'
     ];
+    this.loadSeedData();
+  }
+
+  loadSeedData() {
+    const seeds = {
+      "what": { "is": 10, "are": 5, "do": 5, "can": 3 },
+      "how": { "to": 20, "do": 5, "can": 5, "is": 3 },
+      "this": { "is": 25, "will": 5, "was": 5, "can": 3 },
+      "in": { "the": 30, "order": 10, "front": 8, "addition": 5 },
+      "would": { "like": 15, "be": 10, "have": 5 },
+      "want": { "to": 25 },
+      "one": { "of": 20 },
+      "need": { "to": 25 },
+      "going": { "to": 25 },
+      "will": { "be": 20, "have": 10, "not": 5 },
+      "there": { "are": 15, "is": 15, "will": 5 },
+      "we": { "can": 15, "will": 10, "need": 5, "are": 5 },
+      "you": { "can": 15, "will": 10, "need": 5, "are": 5 },
+      "as": { "well": 15, "soon": 10, "long": 10 },
+      "due": { "to": 15 },
+      "order": { "to": 20 },
+      "so": { "that": 15 },
+      "front": { "of": 15 },
+      "next": { "to": 15, "step": 10, "word": 10, "page": 5 },
+      "associated": { "with": 15 },
+      "related": { "to": 15 },
+      "similar": { "to": 15 },
+      "once": { "upon": 15 },
+      "upon": { "a": 15 },
+      "refer": { "to": 15 },
+      "referred": { "as": 10, "to": 10 },
+      "unable": { "to": 15 },
+      "according": { "to": 15 },
+      "based": { "on": 15 },
+      "focus": { "on": 10 },
+      "interested": { "in": 10 },
+      "depend": { "on": 10 },
+      "depends": { "on": 10 },
+      "consists": { "of": 10 }
+    };
+
+    const trigramSeeds = {
+      "once upon": { "a": 15 },
+      "upon a": { "time": 15 },
+      "in order": { "to": 20 },
+      "as well": { "as": 15 },
+      "so that": { "we": 10, "you": 10, "they": 5 },
+      "referred to": { "as": 15 },
+      "referred as": { "a": 10, "the": 10 },
+      "in front": { "of": 15 },
+      "next to": { "the": 10, "a": 10 },
+      "what is": { "the": 10, "your": 5, "a": 5 },
+      "how to": { "use": 10, "make": 10, "do": 10, "get": 5 },
+      "this is": { "a": 15, "the": 10, "not": 5, "my": 5 },
+      "would like": { "to": 15 }
+    };
+
+    for (const w1 in seeds) {
+      this.transitions[w1] = Object.assign({}, seeds[w1]);
+      for (const w2 in seeds[w1]) {
+        this.vocabulary.add(w1);
+        this.vocabulary.add(w2);
+      }
+    }
+
+    for (const key in trigramSeeds) {
+      this.trigrams[key] = Object.assign({}, trigramSeeds[key]);
+      const parts = key.split(" ");
+      this.vocabulary.add(parts[0]);
+      this.vocabulary.add(parts[1]);
+      for (const w3 in trigramSeeds[key]) {
+        this.vocabulary.add(w3);
+      }
+    }
   }
 
   async buildModelFromActiveFile() {
@@ -1169,8 +1260,11 @@ class PredictionEngine {
 
   buildModel(content) {
     this.transitions = {};
+    this.trigrams = {};
     this.wordFreq = {};
     this.vocabulary.clear();
+
+    this.loadSeedData();
 
     const rawWords = content.toLowerCase().split(/[^a-zA-Z0-9'-]+/).filter(w => w.length > 0);
     
@@ -1184,16 +1278,42 @@ class PredictionEngine {
         if (!this.transitions[w]) this.transitions[w] = {};
         this.transitions[w][nextW] = (this.transitions[w][nextW] || 0) + 1;
       }
+
+      if (i < rawWords.length - 2) {
+        const w1 = rawWords[i];
+        const w2 = rawWords[i + 1];
+        const w3 = rawWords[i + 2];
+        const key = `${w1} ${w2}`;
+        if (!this.trigrams[key]) this.trigrams[key] = {};
+        this.trigrams[key][w3] = (this.trigrams[key][w3] || 0) + 1;
+      }
     }
   }
 
-  predict(lastWord, prefix) {
-    // 1. Try Bigram Prediction
-    if (lastWord && this.transitions[lastWord]) {
-      const candidates = this.transitions[lastWord];
+  predictSingleWord(w1, w2, prefix) {
+    // 1. Try Trigram Prediction: w1 w2 -> nextWord matching prefix
+    if (w1 && w2) {
+      const key = `${w1} ${w2}`;
+      if (this.trigrams[key]) {
+        const candidates = this.trigrams[key];
+        let bestWord = null;
+        let maxCount = -1;
+        for (const candidate in candidates) {
+          if (prefix && !candidate.startsWith(prefix)) continue;
+          if (candidates[candidate] > maxCount) {
+            maxCount = candidates[candidate];
+            bestWord = candidate;
+          }
+        }
+        if (bestWord) return bestWord;
+      }
+    }
+
+    // 2. Try Bigram Prediction: w2 -> nextWord matching prefix
+    if (w2 && this.transitions[w2]) {
+      const candidates = this.transitions[w2];
       let bestWord = null;
       let maxCount = -1;
-
       for (const candidate in candidates) {
         if (prefix && !candidate.startsWith(prefix)) continue;
         if (candidates[candidate] > maxCount) {
@@ -1204,11 +1324,10 @@ class PredictionEngine {
       if (bestWord) return bestWord;
     }
 
-    // 2. Try Current Word Prefix Matching
+    // 3. Try Current Word Prefix Matching from Vocabulary
     if (prefix) {
       let bestWord = null;
       let maxFreq = -1;
-
       for (const word of this.vocabulary) {
         if (word.startsWith(prefix) && word !== prefix) {
           const freq = this.wordFreq[word] || 0;
@@ -1220,7 +1339,7 @@ class PredictionEngine {
       }
       if (bestWord) return bestWord;
 
-      // 3. Fallback to Common Words
+      // 4. Try Common Words matching prefix
       for (const word of this.commonWords) {
         if (word.startsWith(prefix) && word !== prefix) {
           return word;
@@ -1229,6 +1348,255 @@ class PredictionEngine {
     }
 
     return null;
+  }
+
+  predict(w1, w2, prefix) {
+    let result = [];
+    
+    let nextWord = this.predictSingleWord(w1, w2, prefix);
+    if (!nextWord) return null;
+    
+    result.push(nextWord);
+    
+    let prev1 = w2;
+    let prev2 = nextWord;
+    
+    for (let i = 0; i < 3; i++) {
+      let followWord = this.predictSingleWord(prev1, prev2, "");
+      if (!followWord) break;
+      
+      const key = prev1 && prev2 ? `${prev1} ${prev2}` : prev2;
+      const candidates = prev1 && prev2 ? (this.trigrams[key] || this.transitions[prev2]) : this.transitions[prev2];
+      if (!candidates) break;
+      
+      const totalCount = Object.values(candidates).reduce((a, b) => a + b, 0);
+      const count = candidates[followWord] || 0;
+      
+      if (count / totalCount < 0.35 && count < 2) {
+        break;
+      }
+      
+      result.push(followWord);
+      prev1 = prev2;
+      prev2 = followWord;
+    }
+    
+    return result.join(" ");
+  }
+
+  async predictOnline(textBefore) {
+    const provider = activeCustomizerPlugin?.settings?.customStyles?.predictionProvider || "local";
+    if (provider === "local") {
+      return null;
+    }
+
+    const maxTokens = activeCustomizerPlugin?.settings?.customStyles?.predictionMaxTokens || 40;
+    const systemPrompt = `You are an expert text editor assistant. Your task is two-fold:
+1. SPELLING CORRECTION: Scan the last 3 to 4 words of the input text for any obvious spelling mistakes or typos. If a word is misspelled, identify it and provide its correction. Otherwise, set both to null.
+2. NEXT-WORD COMPLETION: Predict the natural continuation of the text starting from the very end of the input (the cursor position). You must only return the next 1 to 4 words max (not a full sentence or story continuation).
+
+You MUST return a JSON object with this exact structure:
+{
+  "misspelled": "the exact misspelled word as it appears in the text, or null if none",
+  "correction": "the corrected spelling of that word, or null if none",
+  "completion": "the natural next words completing the sentence starting from the cursor"
+}
+
+Strict Rules:
+- Only correct actual spelling mistakes in the last 3-4 words. Do not correct grammar or style. If unsure, set "misspelled" and "correction" to null.
+- The "completion" MUST continue from the very last character of the input.
+- The "completion" MUST NOT repeat any words, phrases, or letters that are already present at the end of the input text.
+- The "completion" MUST start with a space if it is a new word, but must NOT start with a space if it completes an unfinished word.
+- Keep the completion extremely short (strictly 1 to 4 words max). Do NOT suggest a full sentence, write ahead, or overhaul the story. Only suggest the immediate next few words to help the user type.
+- Return ONLY the raw JSON object. Do not wrap in markdown code blocks or add any markdown formatting or commentary.`;
+
+    try {
+      let rawResponse = null;
+      if (provider === "gemini") {
+        const apiKey = activeCustomizerPlugin?.settings?.customStyles?.predictionApiKeyGemini;
+        if (!apiKey) return null;
+        const model = activeCustomizerPlugin?.settings?.customStyles?.predictionModelGemini || "gemini-1.5-flash";
+        const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
+        
+        const promptContent = `${systemPrompt}\n\nInput Text:\n"""\n${textBefore}\n"""\n\nJSON output:`;
+
+        const response = await requestUrl({
+          url: url,
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            contents: [{
+              parts: [{ text: promptContent }]
+            }],
+            generationConfig: {
+              maxOutputTokens: maxTokens,
+              temperature: 0.1,
+              responseMimeType: "application/json"
+            }
+          })
+        });
+
+        if (response.status === 200) {
+          rawResponse = response.json.candidates?.[0]?.content?.parts?.[0]?.text;
+        }
+      } else if (provider === "openai") {
+        const apiKey = activeCustomizerPlugin?.settings?.customStyles?.predictionApiKeyOpenAI;
+        if (!apiKey) return null;
+        const model = activeCustomizerPlugin?.settings?.customStyles?.predictionModelOpenAI || "gpt-4o-mini";
+        const url = "https://api.openai.com/v1/chat/completions";
+        
+        const userContent = `Analyze this text and provide the completion JSON:
+"""
+${textBefore}
+"""`;
+
+        const response = await requestUrl({
+          url: url,
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${apiKey}`
+          },
+          body: JSON.stringify({
+            model: model,
+            response_format: { type: "json_object" },
+            messages: [
+              { role: "system", content: systemPrompt },
+              { role: "user", content: userContent }
+            ],
+            max_tokens: maxTokens,
+            temperature: 0.1
+          })
+        });
+
+        if (response.status === 200) {
+          rawResponse = response.json.choices?.[0]?.message?.content;
+        }
+      } else if (provider === "ollama") {
+        const baseUrl = activeCustomizerPlugin?.settings?.customStyles?.predictionOllamaUrl || "http://localhost:11434";
+        const model = activeCustomizerPlugin?.settings?.customStyles?.predictionModelOllama || "gemma4:e4b";
+        const url = `${baseUrl}/api/chat`;
+        
+        const userContent = `Analyze this text and provide the completion JSON:
+"""
+${textBefore}
+"""`;
+
+        const response = await requestUrl({
+          url: url,
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            model: model,
+            format: "json",
+            messages: [
+              { role: "system", content: systemPrompt },
+              { role: "user", content: userContent }
+            ],
+            options: {
+              num_predict: maxTokens,
+              temperature: 0.1
+            },
+            stream: false
+          })
+        });
+
+        if (response.status === 200) {
+          rawResponse = response.json.message?.content;
+        }
+      }
+
+      if (rawResponse) {
+        return this.parseJsonResponse(rawResponse);
+      }
+    } catch (e) {
+      console.warn("Prediction API error:", e);
+    }
+    return null;
+  }
+
+  matchCase(original, correction) {
+    if (!original || !correction) return correction;
+    if (original[0] === original[0].toUpperCase() && original[0] !== original[0].toLowerCase()) {
+      if (original.length > 1 && original === original.toUpperCase()) {
+        return correction.toUpperCase();
+      }
+      return correction[0].toUpperCase() + correction.slice(1);
+    }
+    return correction.toLowerCase();
+  }
+
+  findLastWordMatch(text, word) {
+    if (!word) return -1;
+    const escaped = word.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&');
+    const regex = new RegExp('\\b' + escaped + '\\b', 'gi');
+    let match;
+    let lastIndex = -1;
+    while ((match = regex.exec(text)) !== null) {
+      lastIndex = match.index;
+    }
+    return lastIndex;
+  }
+
+  parseJsonResponse(rawText) {
+    if (!rawText) return null;
+    console.log("[Prediction] Parsing raw text response:", rawText);
+    
+    // Clean up markdown block wraps if model ignored instructions
+    rawText = rawText.replace(/```json/i, "").replace(/```/, "").trim();
+    
+    let misspelled = null;
+    let correction = null;
+    let completion = "";
+    
+    const misMatch = rawText.match(/"misspelled[^"]*"\s*:\s*(?:null|"(.*?)"?)(?:\s*,|\s*}|\s*\n|$)/i);
+    if (misMatch) {
+      misspelled = misMatch[1] === undefined || misMatch[1] === "null" ? null : misMatch[1];
+    }
+    
+    const corrMatch = rawText.match(/"correct[^"]*"\s*:\s*(?:null|"(.*?)"?)(?:\s*,|\s*}|\s*\n|$)/i);
+    if (corrMatch) {
+      correction = corrMatch[1] === undefined || corrMatch[1] === "null" ? null : corrMatch[1];
+    }
+    
+    const compMatch = rawText.match(/"complet[^"]*"\s*:\s*"(.*?)"?(?:\s*,|\s*}|\s*\n|$)/i);
+    if (compMatch) {
+      completion = compMatch[1] || "";
+    }
+    
+    // Fallback if no matching keys were found at all
+    if (!misMatch && !corrMatch && !compMatch) {
+      console.warn("[Prediction] Regex match failed, falling back to raw response");
+      return {
+        misspelled: null,
+        correction: null,
+        completion: rawText.trim()
+      };
+    }
+    
+    const parsed = { misspelled, correction, completion };
+    console.log("[Prediction] Regex parsed JSON values:", parsed);
+    return parsed;
+  }
+
+  alignCompletion(textBefore, completion) {
+    if (!completion) return "";
+    
+    // Clean up code block backticks and quotes if LLM returned them
+    completion = completion.replace(/^```[a-z]*\n?/i, "").replace(/\n?```$/, "");
+    completion = completion.replace(/^"/, "").replace(/"$/, "");
+    completion = completion.replace(/^'/, "").replace(/'$/, "");
+    
+    if (!completion) return "";
+
+    const endsWithSpace = /\s$/.test(textBefore);
+    const startsWithSpace = /^\s/.test(completion);
+
+    if (endsWithSpace && startsWithSpace) {
+      completion = completion.trimStart();
+    }
+    
+    return completion;
   }
 }
 
@@ -1239,13 +1607,21 @@ const predictionViewPlugin = ViewPlugin.fromClass(class {
   constructor(view) {
     this.view = view;
     this.suggestion = "";
+    this.fullSuggestion = "";
+    this.lastTextBefore = "";
     this.decorations = Decoration.none;
+    this.debounceTimer = null;
+    this.requestIdCounter = 0;
+    this.activeCorrection = null;
+  }
+
+  destroy() {
+    clearTimeout(this.debounceTimer);
   }
 
   update(update) {
     if (!activeCustomizerPlugin || !activeCustomizerPlugin.settings?.customStyles?.enablePrediction) {
-      this.suggestion = "";
-      this.decorations = Decoration.none;
+      this.clearSuggestion();
       return;
     }
 
@@ -1257,8 +1633,7 @@ const predictionViewPlugin = ViewPlugin.fromClass(class {
   updateSuggestion() {
     const state = this.view.state;
     if (state.selection.ranges.length !== 1 || !state.selection.main.empty) {
-      this.suggestion = "";
-      this.decorations = Decoration.none;
+      this.clearSuggestion();
       return;
     }
 
@@ -1266,52 +1641,159 @@ const predictionViewPlugin = ViewPlugin.fromClass(class {
     const line = state.doc.lineAt(pos);
     const lineText = line.text;
     const col = pos - line.from;
-
     const textBefore = lineText.slice(0, col);
-    
-    // Extract last word and the prefix being typed
-    const match = textBefore.match(/([a-zA-Z0-9'-]+)\s+([a-zA-Z0-9'-]*)$/);
-    const singleWordMatch = textBefore.match(/^\s*([a-zA-Z0-9'-]*)$/);
-    
-    let lastWord = "";
-    let currentPrefix = "";
 
-    if (match) {
-      lastWord = match[1].toLowerCase();
-      currentPrefix = match[2].toLowerCase();
-    } else if (singleWordMatch) {
-      currentPrefix = singleWordMatch[1].toLowerCase();
-    }
-
-    if (!lastWord && currentPrefix.length < 2) {
-      this.suggestion = "";
-      this.decorations = Decoration.none;
+    if (textBefore.trim().length === 0) {
+      this.clearSuggestion();
       return;
     }
 
-    const predictedWord = activeCustomizerPlugin.predictionEngine.predict(lastWord, currentPrefix);
+    // 1. Check if we can reuse the current suggestion (incremental typing match)
+    if (this.fullSuggestion && this.lastTextBefore && textBefore.startsWith(this.lastTextBefore) && !this.activeCorrection) {
+      const typedSinceLast = textBefore.slice(this.lastTextBefore.length);
+      if (this.fullSuggestion.startsWith(typedSinceLast)) {
+        this.suggestion = this.fullSuggestion.slice(typedSinceLast.length);
+        if (this.suggestion) {
+          this.renderDecoration(pos);
+          return;
+        }
+      }
+    }
 
-    if (predictedWord && predictedWord.startsWith(currentPrefix) && predictedWord !== currentPrefix) {
-      this.suggestion = predictedWord.slice(currentPrefix.length);
+    this.clearSuggestion();
+
+    const requestId = ++this.requestIdCounter;
+    
+    // Grab context from document (last 1000 characters)
+    const docText = state.doc.toString();
+    const docPos = pos;
+    const contextBefore = docText.slice(Math.max(0, docPos - 1000), docPos);
+
+    const debounceDelay = activeCustomizerPlugin?.settings?.customStyles?.predictionDebounce || 300;
+    
+    clearTimeout(this.debounceTimer);
+    this.debounceTimer = setTimeout(async () => {
+      let result = null;
+      const provider = activeCustomizerPlugin?.settings?.customStyles?.predictionProvider || "local";
       
+      if (provider === "local") {
+        const match2 = textBefore.match(/([a-zA-Z0-9'-]+)\s+([a-zA-Z0-9'-]+)\s+([a-zA-Z0-9'-]*)$/);
+        const match1 = textBefore.match(/([a-zA-Z0-9'-]+)\s+([a-zA-Z0-9'-]*)$/);
+        const match0 = textBefore.match(/^\s*([a-zA-Z0-9'-]*)$/);
+        
+        let word1 = "";
+        let word2 = "";
+        let prefix = "";
+
+        if (match2) {
+          word1 = match2[1].toLowerCase();
+          word2 = match2[2].toLowerCase();
+          prefix = match2[3].toLowerCase();
+        } else if (match1) {
+          word2 = match1[1].toLowerCase();
+          prefix = match1[2].toLowerCase();
+        } else if (match0) {
+          prefix = match0[1].toLowerCase();
+        }
+
+        if (word2 || prefix.length >= 2) {
+          const localRes = activeCustomizerPlugin.predictionEngine.predict(word1, word2, prefix);
+          if (localRes && localRes.startsWith(prefix)) {
+            result = {
+              misspelled: null,
+              correction: null,
+              completion: localRes.slice(prefix.length)
+            };
+          }
+        }
+      } else {
+        result = await activeCustomizerPlugin.predictionEngine.predictOnline(contextBefore);
+      }
+
+      if (requestId === this.requestIdCounter) {
+        const currentPos = this.view.state.selection.main.head;
+        if (currentPos === pos) {
+          if (result) {
+            const isCorrectorEnabled = activeCustomizerPlugin?.settings?.customStyles?.enableMistakeCorrector;
+            if (isCorrectorEnabled && result.misspelled && result.correction && result.correction.toLowerCase() !== result.misspelled.toLowerCase()) {
+              // Search for result.misspelled in the last 150 characters of contextBefore
+              const searchStart = Math.max(0, contextBefore.length - 150);
+              const searchSegment = contextBefore.slice(searchStart);
+              const lastIndexInSegment = activeCustomizerPlugin.predictionEngine.findLastWordMatch(searchSegment, result.misspelled);
+
+              if (lastIndexInSegment !== -1) {
+                const lastIndex = searchStart + lastIndexInSegment;
+                const startPos = Math.max(0, docPos - 1000) + lastIndex;
+                const endPos = startPos + result.misspelled.length;
+
+                // Match casing of the original word
+                const originalWordInDoc = contextBefore.slice(lastIndex, lastIndex + result.misspelled.length);
+                const casedCorrection = activeCustomizerPlugin.predictionEngine.matchCase(originalWordInDoc, result.correction);
+
+                this.activeCorrection = {
+                  start: startPos,
+                  end: endPos,
+                  original: originalWordInDoc,
+                  replacement: casedCorrection,
+                  completion: result.completion
+                };
+                this.suggestion = result.completion;
+              } else {
+                this.activeCorrection = null;
+                this.suggestion = result.completion;
+                this.fullSuggestion = result.completion;
+                this.lastTextBefore = textBefore;
+              }
+            } else {
+              this.activeCorrection = null;
+              this.suggestion = result.completion;
+              this.fullSuggestion = result.completion;
+              this.lastTextBefore = textBefore;
+            }
+            this.renderDecoration(currentPos);
+            this.view.dispatch({});
+          }
+        }
+      }
+    }, debounceDelay);
+  }
+
+  renderDecoration(pos) {
+    const decoArray = [];
+    
+    if (this.activeCorrection) {
+      const widget = Decoration.replace({
+        widget: new CorrectionWidget(this.activeCorrection.replacement)
+      });
+      decoArray.push(widget.range(this.activeCorrection.start, this.activeCorrection.end));
+    }
+    
+    if (this.suggestion) {
       const widget = Decoration.widget({
         widget: new GhostTextWidget(this.suggestion),
         side: 1
       });
-      this.decorations = Decoration.set([widget.range(pos)]);
-    } else {
-      this.suggestion = "";
-      this.decorations = Decoration.none;
+      decoArray.push(widget.range(pos));
     }
+    
+    decoArray.sort((a, b) => a.from - b.from);
+    this.decorations = decoArray.length > 0 ? Decoration.set(decoArray) : Decoration.none;
+  }
+
+  clearSuggestion() {
+    this.suggestion = "";
+    this.fullSuggestion = "";
+    this.lastTextBefore = "";
+    this.decorations = Decoration.none;
+    this.activeCorrection = null;
   }
 }, {
   decorations: v => v.decorations
 });
 
-const predictionKeymap = keymap.of([
-  {
-    key: "Tab",
-    run: (view) => {
+const predictionKeymap = EditorView.domEventHandlers({
+  keydown(event, view) {
+    if (event.key === "Alt" && !event.ctrlKey && !event.metaKey && !event.shiftKey) {
       if (!activeCustomizerPlugin || !activeCustomizerPlugin.settings?.customStyles?.enablePrediction) {
         return false;
       }
@@ -1323,12 +1805,410 @@ const predictionKeymap = keymap.of([
           changes: { from: pos, to: pos, insert: suggestion },
           selection: { anchor: pos + suggestion.length }
         });
+        event.preventDefault();
+        event.stopPropagation();
         return true;
       }
-      return false;
+    }
+    if (event.key === "Enter") {
+      if (!activeCustomizerPlugin || !activeCustomizerPlugin.settings?.customStyles?.enablePrediction || !activeCustomizerPlugin.settings?.customStyles?.enableMistakeCorrector) {
+        return false;
+      }
+      const plugin = view.plugin(predictionViewPlugin);
+      if (plugin && plugin.activeCorrection) {
+        const { start, end, replacement, completion } = plugin.activeCorrection;
+        const pos = view.state.selection.main.head;
+        
+        view.dispatch({
+          changes: [
+            { from: start, to: end, insert: replacement },
+            { from: pos, to: pos, insert: completion }
+          ],
+          selection: { anchor: pos + (replacement.length - (end - start)) + completion.length }
+        });
+        event.preventDefault();
+        event.stopPropagation();
+        return true;
+      }
+    }
+    return false;
+  }
+});
+
+class SpellCheckModal extends Modal {
+  constructor(app, editor, plugin) {
+    super(app);
+    this.editor = editor;
+    this.plugin = plugin;
+    this.suggestions = [];
+    this.occurrences = [];
+    this.currentIndex = 0;
+  }
+
+  async onOpen() {
+    const { contentEl } = this;
+    contentEl.empty();
+    
+    contentEl.addClass("spellcheck-modal");
+    contentEl.createEl("h2", { text: "🔍 AI Document Spellcheck", cls: "spellcheck-title" });
+
+    const provider = this.plugin.settings?.customStyles?.predictionProvider || "local";
+    if (provider === "local") {
+      const errorContainer = contentEl.createEl("div", { cls: "spellcheck-error-container" });
+      errorContainer.createEl("p", {
+        text: "Spelling correction suggestions require an active AI provider (Gemini, OpenAI, or Ollama).",
+        cls: "spellcheck-error-text"
+      });
+      errorContainer.createEl("p", {
+        text: "Please configure an AI provider in the Customizer settings panel to use this feature.",
+        cls: "spellcheck-error-subtext"
+      });
+      const closeBtn = contentEl.createEl("button", { text: "Close", cls: "spellcheck-btn spellcheck-btn-close" });
+      closeBtn.addEventListener("click", () => this.close());
+      return;
+    }
+
+    const loadingContainer = contentEl.createEl("div", { cls: "spellcheck-loading-container" });
+    loadingContainer.createEl("div", { cls: "spellcheck-spinner" });
+    loadingContainer.createEl("p", { text: "Analyzing note for spelling mistakes...", cls: "spellcheck-loading-text" });
+
+    const docText = this.editor.getValue();
+    if (!docText.trim()) {
+      loadingContainer.remove();
+      contentEl.createEl("p", { text: "The note is empty.", cls: "spellcheck-info-text" });
+      const closeBtn = contentEl.createEl("button", { text: "Close", cls: "spellcheck-btn spellcheck-btn-close" });
+      closeBtn.addEventListener("click", () => this.close());
+      return;
+    }
+
+    try {
+      const suggestions = await this.scanForSpellingMistakes(docText);
+      loadingContainer.remove();
+
+      if (!suggestions || suggestions.length === 0) {
+        contentEl.createEl("p", { text: "🎉 No spelling mistakes found in the document!", cls: "spellcheck-info-text" });
+        const closeBtn = contentEl.createEl("button", { text: "Close", cls: "spellcheck-btn spellcheck-btn-close" });
+        closeBtn.addEventListener("click", () => this.close());
+        return;
+      }
+
+      this.occurrences = this.findAllOccurrences(docText, suggestions);
+      if (this.occurrences.length === 0) {
+        contentEl.createEl("p", { text: "🎉 No spelling mistakes found in the document!", cls: "spellcheck-info-text" });
+        const closeBtn = contentEl.createEl("button", { text: "Close", cls: "spellcheck-btn spellcheck-btn-close" });
+        closeBtn.addEventListener("click", () => this.close());
+        return;
+      }
+
+      this.renderCorrectionUI(contentEl);
+    } catch (err) {
+      console.error("Spellcheck scan failed:", err);
+      loadingContainer.remove();
+      contentEl.createEl("p", { text: "Failed to scan document: " + err.message, cls: "spellcheck-error-text" });
+      const closeBtn = contentEl.createEl("button", { text: "Close", cls: "spellcheck-btn spellcheck-btn-close" });
+      closeBtn.addEventListener("click", () => this.close());
     }
   }
-]);
+
+  async scanForSpellingMistakes(docText) {
+    const systemPrompt = `You are a spelling correction assistant.
+Scan the user's text for spelling mistakes, typos, and obvious misspellings.
+Identify each misspelled word and provide its correct spelling.
+
+You MUST return a JSON array containing only objects with this structure:
+[
+  {
+    "misspelled": "the exact misspelled word as it appears in the text (case-sensitive)",
+    "correction": "the corrected spelling of that word"
+  }
+]
+
+Rules:
+1. Only include actual spelling mistakes/typos. Do not include grammatical or stylistic suggestions.
+2. If the text has no spelling mistakes, return an empty array: [].
+3. Misspelled words must be case-sensitive and match the text exactly.
+4. Return ONLY the raw JSON array. Do not wrap in markdown code blocks or add commentary.`;
+
+    const provider = this.plugin.settings?.customStyles?.predictionProvider;
+    const maxTokens = 500;
+
+    let rawResponse = null;
+    if (provider === "gemini") {
+      const apiKey = this.plugin.settings?.customStyles?.predictionApiKeyGemini;
+      if (!apiKey) throw new Error("Gemini API Key is missing");
+      const model = this.plugin.settings?.customStyles?.predictionModelGemini || "gemini-1.5-flash";
+      const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
+      const promptContent = `${systemPrompt}\n\nInput Text:\n"""\n${docText}\n"""\n\nJSON output:`;
+
+      const response = await requestUrl({
+        url: url,
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          contents: [{ parts: [{ text: promptContent }] }],
+          generationConfig: {
+            maxOutputTokens: maxTokens,
+            temperature: 0.1,
+            responseMimeType: "application/json"
+          }
+        })
+      });
+      if (response.status === 200) {
+        rawResponse = response.json.candidates?.[0]?.content?.parts?.[0]?.text;
+      }
+    } else if (provider === "openai") {
+      const apiKey = this.plugin.settings?.customStyles?.predictionApiKeyOpenAI;
+      if (!apiKey) throw new Error("OpenAI API Key is missing");
+      const model = this.plugin.settings?.customStyles?.predictionModelOpenAI || "gpt-4o-mini";
+      const url = "https://api.openai.com/v1/chat/completions";
+      const userContent = `Analyze this text for spelling mistakes:
+"""
+${docText}
+"""`;
+
+      const response = await requestUrl({
+        url: url,
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${apiKey}`
+        },
+        body: JSON.stringify({
+          model: model,
+          response_format: { type: "json_object" },
+          messages: [
+            { role: "system", content: systemPrompt },
+            { role: "user", content: userContent }
+          ],
+          max_tokens: maxTokens,
+          temperature: 0.1
+        })
+      });
+      if (response.status === 200) {
+        rawResponse = response.json.choices?.[0]?.message?.content;
+      }
+    } else if (provider === "ollama") {
+      const baseUrl = this.plugin.settings?.customStyles?.predictionOllamaUrl || "http://localhost:11434";
+      const model = this.plugin.settings?.customStyles?.predictionModelOllama || "gemma4:e4b";
+      const url = `${baseUrl}/api/chat`;
+      const userContent = `Analyze this text for spelling mistakes:
+"""
+${docText}
+"""`;
+
+      const response = await requestUrl({
+        url: url,
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          model: model,
+          format: "json",
+          messages: [
+            { role: "system", content: systemPrompt },
+            { role: "user", content: userContent }
+          ],
+          options: {
+            num_predict: maxTokens,
+            temperature: 0.1
+          },
+          stream: false
+        })
+      });
+      if (response.status === 200) {
+        rawResponse = response.json.message?.content;
+      }
+    }
+
+    if (rawResponse) {
+      try {
+        const cleanJson = rawResponse.replace(/```json/i, "").replace(/```/, "").trim();
+        const parsed = JSON.parse(cleanJson);
+        return this.cleanAndNormalizeSuggestions(parsed, rawResponse);
+      } catch (e) {
+        console.warn("JSON parsing of full spelling scan failed. Attempting regex extraction.", e);
+        return this.extractSuggestionsViaRegex(rawResponse);
+      }
+    }
+    return [];
+  }
+
+  cleanAndNormalizeSuggestions(parsed, rawResponse) {
+    if (!parsed) {
+      return this.extractSuggestionsViaRegex(rawResponse);
+    }
+    
+    // 1. If it's already an array
+    if (Array.isArray(parsed)) {
+      return parsed.filter(item => item && typeof item === "object" && item.misspelled);
+    }
+    
+    // 2. If it's a single correction object
+    if (typeof parsed === "object" && parsed !== null) {
+      if (parsed.misspelled && parsed.correction) {
+        return [parsed];
+      }
+      
+      // 3. If it's an object containing an array inside one of its keys
+      for (const key in parsed) {
+        if (Array.isArray(parsed[key])) {
+          return parsed[key].filter(item => item && typeof item === "object" && item.misspelled);
+        }
+      }
+    }
+    
+    // 4. Fallback to regex
+    return this.extractSuggestionsViaRegex(rawResponse);
+  }
+
+  extractSuggestionsViaRegex(rawResponse) {
+    if (!rawResponse) return [];
+    const results = [];
+    const regex = /["']misspelled["']\s*:\s*["']((?:[^"'\\]|\\.)*)["']\s*,\s*["']correction["']\s*:\s*["']((?:[^"'\\]|\\.)*)["']/gi;
+    let match;
+    while ((match = regex.exec(rawResponse)) !== null) {
+      results.push({ misspelled: match[1], correction: match[2] });
+    }
+    return results;
+  }
+
+  findAllOccurrences(docText, suggestions) {
+    const occurrences = [];
+    if (!Array.isArray(suggestions)) return occurrences;
+    suggestions.forEach(s => {
+      if (!s.misspelled || !s.correction) return;
+      const escaped = s.misspelled.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&');
+      const regex = new RegExp('\\b' + escaped + '\\b', 'gi');
+      let match;
+      while ((match = regex.exec(docText)) !== null) {
+        occurrences.push({
+          misspelled: match[0],
+          correction: s.correction,
+          index: match.index,
+          length: match[0].length
+        });
+      }
+    });
+    occurrences.sort((a, b) => a.index - b.index);
+    return occurrences;
+  }
+
+  renderCorrectionUI(container) {
+    container.empty();
+    container.createEl("h2", { text: "🔍 AI Document Spellcheck", cls: "spellcheck-title" });
+
+    const hudRow = container.createEl("div", { cls: "spellcheck-hud" });
+    const trustBtn = hudRow.createEl("button", { text: "✨ Trust AI: Fix All Mistakes", cls: "spellcheck-btn spellcheck-btn-trust-ai" });
+    trustBtn.addEventListener("click", () => {
+      this.applyAllCorrections();
+      new Notice("Corrected all spelling mistakes!");
+      this.close();
+    });
+
+    this.cardWrapper = container.createEl("div", { cls: "spellcheck-card-wrapper" });
+    this.renderCurrentCard();
+
+    this.keydownHandler = (e) => {
+      if (e.key === "Enter") {
+        e.preventDefault();
+        this.acceptCurrent();
+      } else if (e.key === "ArrowRight") {
+        e.preventDefault();
+        this.skipCurrent();
+      }
+    };
+    this.modalEl.addEventListener("keydown", this.keydownHandler);
+  }
+
+  renderCurrentCard() {
+    this.cardWrapper.empty();
+
+    if (this.currentIndex >= this.occurrences.length) {
+      this.cardWrapper.createEl("p", { text: "🎉 All mistakes resolved!", cls: "spellcheck-info-text" });
+      const doneBtn = this.cardWrapper.createEl("button", { text: "Finish", cls: "spellcheck-btn spellcheck-btn-close" });
+      doneBtn.addEventListener("click", () => this.close());
+      return;
+    }
+
+    const occ = this.occurrences[this.currentIndex];
+    const card = this.cardWrapper.createEl("div", { cls: "spellcheck-card" });
+    
+    card.createEl("div", {
+      text: `Mistake ${this.currentIndex + 1} of ${this.occurrences.length}`,
+      cls: "spellcheck-progress"
+    });
+
+    const casedCorrection = this.plugin.predictionEngine.matchCase(occ.misspelled, occ.correction);
+
+    const diffRow = card.createEl("div", { cls: "spellcheck-diff-row" });
+    diffRow.createEl("span", { text: occ.misspelled, cls: "spellcheck-diff-original" });
+    diffRow.createEl("span", { text: " ➜ ", cls: "spellcheck-diff-arrow" });
+    diffRow.createEl("span", { text: casedCorrection, cls: "spellcheck-diff-corrected" });
+
+    const docText = this.editor.getValue();
+    const startContext = Math.max(0, occ.index - 40);
+    const endContext = Math.min(docText.length, occ.index + occ.length + 40);
+    
+    const contextBefore = docText.slice(startContext, occ.index);
+    const contextAfter = docText.slice(occ.index + occ.length, endContext);
+
+    const contextEl = card.createEl("div", { cls: "spellcheck-context" });
+    contextEl.createEl("span", { text: (startContext > 0 ? "..." : "") + contextBefore });
+    contextEl.createEl("span", { text: occ.misspelled, cls: "spellcheck-context-target" });
+    contextEl.createEl("span", { text: contextAfter + (endContext < docText.length ? "..." : "") });
+
+    const btnRow = card.createEl("div", { cls: "spellcheck-btn-row" });
+    const acceptBtn = btnRow.createEl("button", { text: "Accept (Enter)", cls: "spellcheck-btn spellcheck-btn-accept" });
+    const skipBtn = btnRow.createEl("button", { text: "Skip", cls: "spellcheck-btn spellcheck-btn-skip" });
+
+    acceptBtn.addEventListener("click", () => this.acceptCurrent());
+    skipBtn.addEventListener("click", () => this.skipCurrent());
+  }
+
+  acceptCurrent() {
+    const occ = this.occurrences[this.currentIndex];
+    this.applyCorrection(occ);
+    this.currentIndex++;
+    this.renderCurrentCard();
+  }
+
+  skipCurrent() {
+    this.currentIndex++;
+    this.renderCurrentCard();
+  }
+
+  applyCorrection(occ) {
+    const from = this.editor.offsetToPos(occ.index);
+    const to = this.editor.offsetToPos(occ.index + occ.length);
+    
+    const casedCorrection = this.plugin.predictionEngine.matchCase(occ.misspelled, occ.correction);
+    this.editor.replaceRange(casedCorrection, from, to);
+    
+    const diff = casedCorrection.length - occ.length;
+    for (let i = this.currentIndex + 1; i < this.occurrences.length; i++) {
+      if (this.occurrences[i].index > occ.index) {
+        this.occurrences[i].index += diff;
+      }
+    }
+  }
+
+  applyAllCorrections() {
+    const sorted = [...this.occurrences].slice(this.currentIndex).sort((a, b) => b.index - a.index);
+    sorted.forEach(occ => {
+      const from = this.editor.offsetToPos(occ.index);
+      const to = this.editor.offsetToPos(occ.index + occ.length);
+      const casedCorrection = this.plugin.predictionEngine.matchCase(occ.misspelled, occ.correction);
+      this.editor.replaceRange(casedCorrection, from, to);
+    });
+  }
+
+  onClose() {
+    if (this.keydownHandler) {
+      this.modalEl.removeEventListener("keydown", this.keydownHandler);
+    }
+    const { contentEl } = this;
+    contentEl.empty();
+  }
+}
 
 // =========================================================================
 // MAIN WRAPPER PLUGIN: Inferno Customizer Hub
@@ -1400,6 +2280,46 @@ module.exports = class InfernoCustomizerPlugin extends Plugin {
         this.injectStyles();
       })
     );
+
+    // Set active customizer plugin instance
+    activeCustomizerPlugin = this;
+
+    // Initialize prediction engine
+    this.predictionEngine = new PredictionEngine(this.app);
+    this.app.workspace.onLayoutReady(() => {
+      this.predictionEngine.buildModelFromActiveFile();
+    });
+
+    this.registerEvent(
+      this.app.workspace.on("active-leaf-change", () => {
+        this.predictionEngine.buildModelFromActiveFile();
+      })
+    );
+
+    let debounceTimer;
+    this.registerEvent(
+      this.app.vault.on("modify", (file) => {
+        const activeFile = this.app.workspace.getActiveFile();
+        if (activeFile && file.path === activeFile.path) {
+          clearTimeout(debounceTimer);
+          debounceTimer = setTimeout(() => {
+            this.predictionEngine.buildModelFromActiveFile();
+          }, 3000);
+        }
+      })
+    );
+
+    this.registerEditorExtension([predictionViewPlugin, predictionKeymap]);
+
+    // Register global spellcheck hotkey command
+    this.addCommand({
+      id: "open-spellcheck-suggestions",
+      name: "Show spelling correction suggestions",
+      hotkeys: [{ modifiers: ["Ctrl", "Alt"], key: " " }],
+      editorCallback: (editor, view) => {
+        new SpellCheckModal(this.app, editor, this).open();
+      }
+    });
   }
 
   async migrateSettingsIfNeeded() {
@@ -1485,9 +2405,51 @@ module.exports = class InfernoCustomizerPlugin extends Plugin {
         mermaidResize: true,
         mermaidMaxWidth: "600px",
         colouredCallouts: true,
-        customCSS: ""
+        customCSS: "",
+        enablePrediction: true,
+        predictionProvider: "local",
+        predictionApiKeyGemini: "",
+        predictionModelGemini: "gemini-1.5-flash",
+        predictionApiKeyOpenAI: "",
+        predictionModelOpenAI: "gpt-4o-mini",
+        predictionOllamaUrl: "http://localhost:11434",
+        predictionModelOllama: "gemma4:e4b",
+        predictionMaxTokens: 25,
+        predictionDebounce: 300,
+        enableMistakeCorrector: true
       };
       await this.saveData(data);
+    } else {
+      let modified = false;
+      if (data.customStyles.enablePrediction === undefined) {
+        data.customStyles.enablePrediction = true;
+        modified = true;
+      }
+      if (data.customStyles.predictionProvider === undefined) {
+        data.customStyles.predictionProvider = "local";
+        data.customStyles.predictionApiKeyGemini = "";
+        data.customStyles.predictionModelGemini = "gemini-1.5-flash";
+        data.customStyles.predictionApiKeyOpenAI = "";
+        data.customStyles.predictionModelOpenAI = "gpt-4o-mini";
+        data.customStyles.predictionOllamaUrl = "http://localhost:11434";
+        data.customStyles.predictionModelOllama = "gemma4:e4b";
+        data.customStyles.predictionMaxTokens = 25;
+        data.customStyles.predictionDebounce = 300;
+        data.customStyles.enableMistakeCorrector = true;
+        modified = true;
+      } else {
+        if (data.customStyles.predictionMaxTokens === undefined || data.customStyles.predictionMaxTokens < 25) {
+          data.customStyles.predictionMaxTokens = 25;
+          modified = true;
+        }
+        if (data.customStyles.enableMistakeCorrector === undefined) {
+          data.customStyles.enableMistakeCorrector = true;
+          modified = true;
+        }
+      }
+      if (modified) {
+        await this.saveData(data);
+      }
     }
     return data;
   }
@@ -1879,6 +2841,154 @@ class InfernoCustomizerSettingTab extends PluginSettingTab {
         s.colouredCallouts = val;
         await this.plugin.saveSettings();
       }));
+
+    // Next Word Prediction Toggle
+    styleContent.createEl("h3", { text: "Text Editing & Prediction", cls: "customizer-subheading" });
+
+    new Setting(styleContent)
+      .setName("Enable Next Word Prediction")
+      .setDesc("Predict next words or auto-complete the current word as you type. Press Alt to accept predictions.")
+      .addToggle(cb => cb.setValue(!!s.enablePrediction).onChange(async val => {
+        s.enablePrediction = val;
+        await this.plugin.saveSettings();
+        this.display(); // Refresh settings UI to show/hide sub-settings
+      }));
+
+    if (s.enablePrediction) {
+      new Setting(styleContent)
+        .setName("Enable Auto-Mistake Corrector")
+        .setDesc("Highlight and suggest corrections for misspelled words. Press Enter to apply the correction, or keep typing to ignore.")
+        .addToggle(cb => cb.setValue(!!s.enableMistakeCorrector).onChange(async val => {
+          s.enableMistakeCorrector = val;
+          await this.plugin.saveSettings();
+        }));
+
+      new Setting(styleContent)
+        .setName("Prediction Provider")
+        .setDesc("Choose between local N-Gram engine, or premium cloud/local AI model completions.")
+        .addDropdown(cb => cb
+          .addOption("local", "Local (N-Gram Trigram Engine)")
+          .addOption("gemini", "Google Gemini (Fast Cloud)")
+          .addOption("openai", "OpenAI GPT (Cloud)")
+          .addOption("ollama", "Ollama (Local LLM)")
+          .setValue(s.predictionProvider || "local")
+          .onChange(async val => {
+            s.predictionProvider = val;
+            await this.plugin.saveSettings();
+            this.display(); // Refresh to update fields
+          })
+        );
+
+      if (s.predictionProvider === "gemini") {
+        new Setting(styleContent)
+          .setName("Gemini API Key")
+          .setDesc("Enter your Google AI Studio API key.")
+          .addText(cb => {
+            cb.setPlaceholder("AIzaSy...")
+              .setValue(s.predictionApiKeyGemini || "")
+              .onChange(async val => {
+                s.predictionApiKeyGemini = val.trim();
+                await this.plugin.saveSettings();
+              });
+            cb.inputEl.type = "password";
+          });
+
+        new Setting(styleContent)
+          .setName("Gemini Model")
+          .setDesc("Select which Gemini model to use for completion.")
+          .addDropdown(cb => cb
+            .addOption("gemini-1.5-flash", "Gemini 1.5 Flash (Recommended - Super Fast)")
+            .addOption("gemini-1.5-pro", "Gemini 1.5 Pro (High Quality)")
+            .setValue(s.predictionModelGemini || "gemini-1.5-flash")
+            .onChange(async val => {
+              s.predictionModelGemini = val;
+              await this.plugin.saveSettings();
+            })
+          );
+      }
+
+      if (s.predictionProvider === "openai") {
+        new Setting(styleContent)
+          .setName("OpenAI API Key")
+          .setDesc("Enter your OpenAI API key.")
+          .addText(cb => {
+            cb.setPlaceholder("sk-...")
+              .setValue(s.predictionApiKeyOpenAI || "")
+              .onChange(async val => {
+                s.predictionApiKeyOpenAI = val.trim();
+                await this.plugin.saveSettings();
+              });
+            cb.inputEl.type = "password";
+          });
+
+        new Setting(styleContent)
+          .setName("OpenAI Model")
+          .setDesc("Select which GPT model to use for completion.")
+          .addDropdown(cb => cb
+            .addOption("gpt-4o-mini", "GPT-4o Mini (Recommended - Fast)")
+            .addOption("gpt-4o", "GPT-4o (Smartest)")
+            .setValue(s.predictionModelOpenAI || "gpt-4o-mini")
+            .onChange(async val => {
+              s.predictionModelOpenAI = val;
+              await this.plugin.saveSettings();
+            })
+          );
+      }
+
+      if (s.predictionProvider === "ollama") {
+        new Setting(styleContent)
+          .setName("Ollama Base URL")
+          .setDesc("The local URL where Ollama is running.")
+          .addText(cb => cb
+            .setPlaceholder("http://localhost:11434")
+            .setValue(s.predictionOllamaUrl || "http://localhost:11434")
+            .onChange(async val => {
+              s.predictionOllamaUrl = val.trim();
+              await this.plugin.saveSettings();
+            })
+          );
+
+        new Setting(styleContent)
+          .setName("Ollama Model")
+          .setDesc("The model name loaded in Ollama (e.g. gemma4:e4b, qwen2.5:1.5b). You can type any local model name here.")
+          .addText(cb => cb
+            .setPlaceholder("gemma4:e4b")
+            .setValue(s.predictionModelOllama || "gemma4:e4b")
+            .onChange(async val => {
+              s.predictionModelOllama = val.trim();
+              await this.plugin.saveSettings();
+            })
+          );
+      }
+
+      if (s.predictionProvider !== "local") {
+        new Setting(styleContent)
+          .setName("Max Prediction Length (Tokens)")
+          .setDesc("The maximum length of the predicted suggestion (1 token ≈ 4 characters).")
+          .addSlider(cb => cb
+            .setLimits(5, 50, 5)
+            .setDynamicTooltip()
+            .setValue(s.predictionMaxTokens || 15)
+            .onChange(async val => {
+              s.predictionMaxTokens = val;
+              await this.plugin.saveSettings();
+            })
+          );
+
+        new Setting(styleContent)
+          .setName("Autocomplete Delay (ms)")
+          .setDesc("Wait time of no typing before requesting suggestion (lower = faster, higher = fewer API calls).")
+          .addSlider(cb => cb
+            .setLimits(100, 1000, 50)
+            .setDynamicTooltip()
+            .setValue(s.predictionDebounce || 300)
+            .onChange(async val => {
+              s.predictionDebounce = val;
+              await this.plugin.saveSettings();
+            })
+          );
+      }
+    }
 
     // Custom CSS Text Area
     new Setting(styleContent)
