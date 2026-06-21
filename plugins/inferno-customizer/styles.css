@@ -1138,3 +1138,85 @@
   background: rgba(255, 255, 255, 0.1) !important;
 }
 
+/* --- Inferno Customizer Navigation & Global Styles --- */
+.inferno-global-nav {
+  position: fixed;
+  top: 7px;
+  left: 55px;
+  z-index: 9999;
+  display: flex;
+  gap: 4px;
+  align-items: center;
+  background: var(--premium-card-bg, rgba(255, 255, 255, 0.03));
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border: 1px solid var(--premium-card-border, rgba(255, 255, 255, 0.08));
+  border-radius: 6px;
+  padding: 2px 4px;
+  pointer-events: auto;
+}
+
+.inferno-global-nav .nav-btn {
+  background: transparent;
+  border: none;
+  color: var(--text-muted);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  border-radius: 4px;
+  transition: all 0.15s ease;
+  padding: 0;
+}
+
+.inferno-global-nav .nav-btn:hover:not(:disabled) {
+  background: var(--background-modifier-hover, rgba(255, 255, 255, 0.05));
+  color: var(--text-normal);
+}
+
+.inferno-global-nav .nav-btn:disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
+}
+
+.inferno-global-nav .nav-btn svg {
+  width: 14px;
+  height: 14px;
+  stroke-width: 2.5;
+}
+
+.card-location {
+  font-size: 10px !important;
+  color: var(--text-faint) !important;
+  opacity: 0.8;
+  margin-top: 4px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  width: 100%;
+}
+
+.list-item-location {
+  color: var(--text-faint) !important;
+  font-size: 11px !important;
+  margin-left: 6px;
+  font-weight: normal;
+}
+
+.dashboard-create-modal .btn-delete {
+  background: var(--text-error, #f85149) !important;
+  border: none !important;
+  color: #fff !important;
+}
+
+.dashboard-create-modal .btn-delete:hover {
+  filter: brightness(1.1) !important;
+}
+
+.view-header-nav-buttons {
+  display: flex !important;
+  opacity: 1 !important;
+}
+

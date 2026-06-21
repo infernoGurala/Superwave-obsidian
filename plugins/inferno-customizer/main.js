@@ -39,7 +39,7 @@ const FolderDashboardPluginClass = (function() {
   const exports = {};
   const module = { exports };
   
-  const { Plugin, ItemView, TFolder, TFile, setIcon, MarkdownView, Modal, Notice } = require('obsidian');
+  const { Plugin, ItemView, TFolder, TFile, setIcon, MarkdownView, Modal, Notice, Menu } = require('obsidian');
 
 const VIEW_TYPE = "folder-dashboard-view";
 
@@ -138,6 +138,133 @@ class CreateItemModal extends Modal {
   onClose() {
     const { contentEl } = this;
     contentEl.empty();
+  }
+}
+
+class RenameModal extends Modal {
+  constructor(app, item, onViewRefresh) {
+    super(app);
+    this.item = item;
+    this.onViewRefresh = onViewRefresh;
+  }
+
+  onOpen() {
+    const { contentEl } = this;
+    contentEl.empty();
+    contentEl.addClass("dashboard-create-modal");
+
+    contentEl.createEl("h2", { text: `Rename "${this.item.name}"`, cls: "modal-title" });
+
+    const formEl = contentEl.createEl("div", { cls: "modal-form" });
+
+    const nameGroup = formEl.createEl("div", { cls: "modal-form-group" });
+    nameGroup.createEl("label", { text: "New Name", cls: "modal-label" });
+    const nameInput = nameGroup.createEl("input", {
+      type: "text",
+      value: this.item instanceof TFolder ? this.item.name : this.item.basename,
+      cls: "modal-input"
+    });
+
+    const buttonRow = formEl.createEl("div", { cls: "modal-buttons" });
+    const cancelBtn = buttonRow.createEl("button", { text: "Cancel", cls: "modal-btn btn-cancel" });
+    const renameBtn = buttonRow.createEl("button", { text: "Rename", cls: "modal-btn btn-create" });
+
+    setTimeout(() => nameInput.focus(), 50);
+
+    const submit = async () => {
+      const newName = nameInput.value.trim();
+      if (!newName) {
+        new Notice("Please enter a name");
+        return;
+      }
+      
+      let filename = newName;
+      if (this.item instanceof TFile && !filename.endsWith(".md")) {
+        filename += ".md";
+      }
+
+      const parentFolder = this.item.parent;
+      const targetPath = parentFolder && parentFolder.path !== "/" && parentFolder.path !== "" 
+        ? `${parentFolder.path}/${filename}` 
+        : filename;
+
+      if (targetPath === this.item.path) {
+        this.close();
+        return;
+      }
+
+      const existing = this.app.vault.getAbstractFileByPath(targetPath);
+      if (existing) {
+        new Notice("A file or folder with this name already exists");
+        return;
+      }
+
+      try {
+        await this.app.fileManager.renameFile(this.item, targetPath);
+        new Notice(`Renamed to "${newName}"`);
+        this.onViewRefresh();
+        this.close();
+      } catch (err) {
+        new Notice(`Error renaming: ${err.message}`);
+      }
+    };
+
+    nameInput.addEventListener("keydown", (e) => {
+      if (e.key === "Enter") {
+        e.preventDefault();
+        submit();
+      } else if (e.key === "Escape") {
+        this.close();
+      }
+    });
+
+    renameBtn.addEventListener("click", () => submit());
+    cancelBtn.addEventListener("click", () => this.close());
+  }
+
+  onClose() {
+    this.contentEl.empty();
+  }
+}
+
+class DeleteConfirmModal extends Modal {
+  constructor(app, item, onViewRefresh) {
+    super(app);
+    this.item = item;
+    this.onViewRefresh = onViewRefresh;
+  }
+
+  onOpen() {
+    const { contentEl } = this;
+    contentEl.empty();
+    contentEl.addClass("dashboard-create-modal");
+
+    contentEl.createEl("h2", { text: `Delete "${this.item.name}"?`, cls: "modal-title" });
+    
+    const text = this.item instanceof TFolder 
+      ? `Are you sure you want to delete this folder and all its contents?`
+      : `Are you sure you want to delete this note?`;
+    contentEl.createEl("p", { text: text, cls: "modal-text" });
+
+    const buttonRow = contentEl.createEl("div", { cls: "modal-buttons" });
+    const cancelBtn = buttonRow.createEl("button", { text: "Cancel", cls: "modal-btn btn-cancel" });
+    const deleteBtn = buttonRow.createEl("button", { text: "Delete", cls: "modal-btn btn-delete" });
+
+    deleteBtn.addEventListener("click", async () => {
+      try {
+        await this.app.vault.trash(this.item, true);
+        new Notice(`Deleted "${this.item.name}"`);
+        this.onViewRefresh();
+        this.close();
+      } catch (err) {
+        new Notice(`Error deleting: ${err.message}`);
+      }
+    });
+    cancelBtn.addEventListener("click", () => this.close());
+  }
+
+  onClose() {
+    this.contentEl.empty();
   }
 }
 
@@ -760,6 +887,29 @@ class FolderDashboardView extends ItemView {
   }
   openFile(file) {
     this.leaf.openFile(file);
+  }
+  showContextMenu(e, item) {
+    const menu = new Menu();
+    
+    menu.addItem((menuItem) => {
+      menuItem
+        .setTitle("Rename")
+        .setIcon("pencil")
+        .onClick(() => {
+          new RenameModal(this.app, item, () => this.render()).open();
+        });
+    });
+
+    menu.addItem((menuItem) => {
+      menuItem
+        .setTitle("Delete")
+        .setIcon("trash")
+        .onClick(() => {
+          new DeleteConfirmModal(this.app, item, () => this.render()).open();
+        });
+    });
+
+    menu.showAtMouseEvent(e);
   }
   handleKeyDown(e) {
     if (e.ctrlKey && (e.key === " " || e.code === "Space")) {
