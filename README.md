@@ -15,7 +15,7 @@ It bundles three systems into one:
 - **Typewriter Mode** — a distraction-free writing focus system
 - **Inferno Customizer Hub** — a unified styling and UI control panel
 
-No plugin juggling. No scattered settings. One system, tuned for flow.
+No scattered settings. One system, tuned for flow.
 ---
 ## Screenshots
 
@@ -34,10 +34,6 @@ _Interaction_
 ![Search](screenshots/search.png)
 - search is always active.
 - alt+shift to global file+folder search
-  
-**Theme & Font**
-![theme-1](screenshots/theme-1.png)
-![theme-2](screenshots/theme-2.png)
 
 ---
 
@@ -57,19 +53,7 @@ A full-screen, visual vault navigator — not just a file list.
 - **Hotkeys:**
   - `Ctrl + Shift` → Jump to root folder
   - `Alt + Shift` → Global search (files and folders)
-
----
-
-### ✍️ Typewriter Mode
-
-Included [Type writer mode by Davis Riedel](https://github.com/davisriedel/obsidian-typewriter-mode)
-
----
-### ✍️ Text prediciton AI
-> Prediction of text, by local LLM. 
-![theme-1](screenshots/AI-text.png)
-
-> Mistake correction: <img width="1220" height="734" alt="image" src="https://github.com/user-attachments/assets/637d95bb-bc08-4540-aab6-da05bdc717a1" />
+  - `M MOUSE` → on the breadcrumb, jump into file explorer (active dir)
 
 ---
 
@@ -77,12 +61,6 @@ Included [Type writer mode by Davis Riedel](https://github.com/davisriedel/obsid
 ### 🎨 Inferno Customizer Hub
 
 One settings panel for everything visual.
-
-**Typography**
-- Title font family
-- Headings font family
-- Interface font family
-- Editor body font family
 
 **Interface Cleanup**
 - Hide attachments folder from explorer (configurable folder name)
@@ -93,47 +71,12 @@ One settings panel for everything visual.
 **Content Display**
 - Mermaid diagram resize with configurable max-width
 - Custom coloured callouts toggle
-- Raw CSS override field for direct style injection
-
-**PDF Print**
-- Auto-generates a `pdf-theme-fix.css` snippet that respects your current theme when printing or exporting
+- Raw CSS override field for direct style injections
 
 ---
 
-## Installation
-
-> **Manual install only** — not yet on the Obsidian community plugins list.
-
-### Plugin
-
-1. Download `main.js`, `styles.css`, and `manifest.json` from this repo.
-2. Create the folder: `<your-vault>/.obsidian/plugins/inferno-customizer/`
-3. Place the three files inside it.
-4. Restart Obsidian.
-5. Go to **Settings → Community Plugins** and enable **Inferno Customizer Hub**.
-
-### Theme
-
-1. Download `theme.css` from `themes/inferno-theme/`.
-2. Place it in: `<your-vault>/.obsidian/themes/inferno-theme/`
-3. Go to **Settings → Appearance** and select **inferno-theme**.
 
 ---
-
-## Compatibility
-
-| Field | Value |
-|---|---|
-| Minimum Obsidian version | 0.15.0 |
-| Desktop | ✅ |
-| Mobile | ✅ |
-| Plugin ID | `inferno-customizer` |
-
----
-
-## Project
-
-Built by [infernoGurala](https://github.com/infernoGurala)
-Part of the *Inferno* creative system.
 
 > *"A different way, built for minds that move fast."*
+

@@ -7,11 +7,208 @@ const FolderDashboardPluginClass = (function() {
   const exports = {};
   const module = { exports };
   
-  const { Plugin, ItemView, TFolder, TFile, setIcon, MarkdownView } = require('obsidian');
+  const { Plugin, ItemView, TFolder, TFile, setIcon, MarkdownView, Menu, Modal, Notice } = require('obsidian');
+
+class RenameModal extends Modal {
+  constructor(app, item, onSubmit) {
+    super(app);
+    this.item = item;
+    this.onSubmit = onSubmit;
+  }
+
+  onOpen() {
+    const { contentEl } = this;
+    contentEl.empty();
+    contentEl.createEl("h3", { text: `Rename ${this.item instanceof TFolder ? 'Folder' : 'Note'}` });
+
+    const currentName = this.item instanceof TFolder ? this.item.name : this.item.basename;
+    
+    const inputEl = contentEl.createEl("input", {
+      type: "text",
+      value: currentName,
+      cls: "rename-modal-input"
+    });
+    inputEl.style.width = "100%";
+    inputEl.style.padding = "8px 12px";
+    inputEl.style.backgroundColor = "var(--background-modifier-form-field)";
+    inputEl.style.border = "1px solid var(--background-modifier-border)";
+    inputEl.style.borderRadius = "4px";
+    inputEl.style.color = "var(--text-normal)";
+    inputEl.style.fontSize = "14px";
+    inputEl.style.marginBottom = "16px";
+    
+    inputEl.focus();
+    if (!(this.item instanceof TFolder)) {
+      inputEl.setSelectionRange(0, currentName.length);
+    } else {
+      inputEl.select();
+    }
+
+    const buttonContainer = contentEl.createEl("div");
+    buttonContainer.style.display = "flex";
+    buttonContainer.style.justifyContent = "flex-end";
+    buttonContainer.style.gap = "8px";
+
+    const cancelBtn = buttonContainer.createEl("button", { text: "Cancel" });
+    cancelBtn.addEventListener("click", () => this.close());
+
+    const submitBtn = buttonContainer.createEl("button", { text: "Rename", cls: "mod-cta" });
+    const doRename = () => {
+      const newName = inputEl.value.trim();
+      const invalidChars = /[\\/:*?"<>|]/;
+      if (!newName) {
+        new Notice("Name cannot be empty.");
+        return;
+      }
+      if (invalidChars.test(newName)) {
+        new Notice("Name contains invalid characters: \\ / : * ? \" < > |");
+        return;
+      }
+      if (newName === currentName) {
+        this.close();
+        return;
+      }
+      this.onSubmit(newName);
+      this.close();
+    };
+    submitBtn.addEventListener("click", doRename);
+    inputEl.addEventListener("keydown", (e) => {
+      if (e.key === "Enter") {
+        e.preventDefault();
+        doRename();
+      } else if (e.key === "Escape") {
+        e.preventDefault();
+        this.close();
+      }
+    });
+  }
+
+  onClose() {
+    const { contentEl } = this;
+    contentEl.empty();
+  }
+}
+
+class DeleteConfirmModal extends Modal {
+  constructor(app, item, onDelete) {
+    super(app);
+    this.item = item;
+    this.onDelete = onDelete;
+  }
+
+  onOpen() {
+    const { contentEl } = this;
+    contentEl.empty();
+    const isFolder = this.item instanceof TFolder;
+    const typeStr = isFolder ? "folder" : "note";
+    const nameStr = isFolder ? this.item.name : this.item.basename;
+
+    contentEl.createEl("h3", { text: `Delete ${isFolder ? 'Folder' : 'Note'}` });
+    contentEl.createEl("p", { 
+      text: `Are you sure you want to delete the ${typeStr} "${nameStr}"? This will move it to the system trash.` 
+    });
+
+    const buttonContainer = contentEl.createEl("div");
+    buttonContainer.style.display = "flex";
+    buttonContainer.style.justifyContent = "flex-end";
+    buttonContainer.style.gap = "8px";
+
+    const cancelBtn = buttonContainer.createEl("button", { text: "Cancel" });
+    cancelBtn.addEventListener("click", () => this.close());
+
+    const deleteBtn = buttonContainer.createEl("button", { text: "Delete", cls: "mod-warning" });
+    deleteBtn.addEventListener("click", () => {
+      this.onDelete();
+      this.close();
+    });
+  }
+
+  onClose() {
+    const { contentEl } = this;
+    contentEl.empty();
+  }
+}
+
+class CreateItemModal extends Modal {
+  constructor(app, type, currentPath, onSubmit) {
+    super(app);
+    this.type = type;
+    this.currentPath = currentPath;
+    this.onSubmit = onSubmit;
+  }
+
+  onOpen() {
+    const { contentEl } = this;
+    contentEl.empty();
+    
+    const titleText = this.type === "note" ? "Create New Note" : "Create New Folder";
+    contentEl.createEl("h3", { text: titleText });
+
+    const inputEl = contentEl.createEl("input", {
+      type: "text",
+      placeholder: this.type === "note" ? "Note name..." : "Folder name...",
+      cls: "create-modal-input"
+    });
+    inputEl.style.width = "100%";
+    inputEl.style.padding = "8px 12px";
+    inputEl.style.backgroundColor = "var(--background-modifier-form-field)";
+    inputEl.style.border = "1px solid var(--background-modifier-border)";
+    inputEl.style.borderRadius = "4px";
+    inputEl.style.color = "var(--text-normal)";
+    inputEl.style.fontSize = "14px";
+    inputEl.style.marginBottom = "16px";
+    inputEl.focus();
+
+    const buttonContainer = contentEl.createEl("div");
+    buttonContainer.style.display = "flex";
+    buttonContainer.style.justifyContent = "flex-end";
+    buttonContainer.style.gap = "8px";
+
+    const cancelBtn = buttonContainer.createEl("button", { text: "Cancel" });
+    cancelBtn.addEventListener("click", () => this.close());
+
+    const submitBtn = buttonContainer.createEl("button", { 
+      text: this.type === "note" ? "Create Note" : "Create Folder", 
+      cls: "mod-cta" 
+    });
+
+    const doCreate = () => {
+      const name = inputEl.value.trim();
+      const invalidChars = /[\\/:*?"<>|]/;
+      if (!name) {
+        new Notice("Name cannot be empty.");
+        return;
+      }
+      if (invalidChars.test(name)) {
+        new Notice("Name contains invalid characters: \\ / : * ? \" < > |");
+        return;
+      }
+      this.onSubmit(name);
+      this.close();
+    };
+
+    submitBtn.addEventListener("click", doCreate);
+    inputEl.addEventListener("keydown", (e) => {
+      if (e.key === "Enter") {
+        e.preventDefault();
+        doCreate();
+      } else if (e.key === "Escape") {
+        e.preventDefault();
+        this.close();
+      }
+    });
+  }
+
+  onClose() {
+    const { contentEl } = this;
+    contentEl.empty();
+  }
+}
+
 
 const VIEW_TYPE = "folder-dashboard-view";
 
-function createBreadcrumbsDOM(containerEl, path, isFile, onNavigate) {
+function createBreadcrumbsDOM(containerEl, path, isFile, onNavigate, onMiddleClick) {
   containerEl.empty();
   containerEl.classList.add("inferno-breadcrumb-container");
 
@@ -30,6 +227,20 @@ function createBreadcrumbsDOM(containerEl, path, isFile, onNavigate) {
       onNavigate("");
     });
   }
+
+  // Handle middle-click on Vault item
+  vaultItem.addEventListener("mousedown", (e) => {
+    if (e.button === 1) {
+      e.preventDefault();
+    }
+  });
+  vaultItem.addEventListener("auxclick", (e) => {
+    if (e.button === 1) {
+      e.stopPropagation();
+      e.preventDefault();
+      if (onMiddleClick) onMiddleClick("");
+    }
+  });
 
   if (path) {
     const parts = path.split("/");
@@ -56,6 +267,27 @@ function createBreadcrumbsDOM(containerEl, path, isFile, onNavigate) {
           onNavigate(targetPath);
         });
       }
+
+      // Handle middle-click on part items
+      partItem.addEventListener("mousedown", (e) => {
+        if (e.button === 1) {
+          e.preventDefault();
+        }
+      });
+      partItem.addEventListener("auxclick", (e) => {
+        if (e.button === 1) {
+          e.stopPropagation();
+          e.preventDefault();
+          
+          let dirPath = targetPath;
+          if (isFile && isLast) {
+            const segments = targetPath.split("/");
+            segments.pop();
+            dirPath = segments.join("/");
+          }
+          if (onMiddleClick) onMiddleClick(dirPath);
+        }
+      });
     });
   }
 }
@@ -394,7 +626,8 @@ class FolderDashboardView extends ItemView {
       breadcrumbsWrapper, 
       this.currentPath, 
       false, 
-      (targetPath) => this.navigateToPath(targetPath)
+      (targetPath) => this.navigateToPath(targetPath),
+      (targetPath) => this.plugin.activateViewAndNavigateRight(targetPath)
     );
   }
   updateNativeBreadcrumbs() {
@@ -431,6 +664,18 @@ class FolderDashboardView extends ItemView {
           e.stopPropagation();
           this.navigateToPath("");
         });
+        vaultSpan.addEventListener("mousedown", (e) => {
+          if (e.button === 1) {
+            e.preventDefault();
+          }
+        });
+        vaultSpan.addEventListener("auxclick", (e) => {
+          if (e.button === 1) {
+            e.stopPropagation();
+            e.preventDefault();
+            this.plugin.activateViewAndNavigateRight("");
+          }
+        });
         
         const parts = this.currentPath.split("/");
         parts.pop();
@@ -449,6 +694,18 @@ class FolderDashboardView extends ItemView {
           partSpan.addEventListener("click", (e) => {
             e.stopPropagation();
             this.navigateToPath(targetPath);
+          });
+          partSpan.addEventListener("mousedown", (e) => {
+            if (e.button === 1) {
+              e.preventDefault();
+            }
+          });
+          partSpan.addEventListener("auxclick", (e) => {
+            if (e.button === 1) {
+              e.stopPropagation();
+              e.preventDefault();
+              this.plugin.activateViewAndNavigateRight(targetPath);
+            }
           });
         });
         
@@ -516,6 +773,11 @@ class FolderDashboardView extends ItemView {
       } else {
         this.openFile(item);
       }
+    });
+
+    // Context menu for rename/delete
+    card.addEventListener("contextmenu", (e) => {
+      this.showItemContextMenu(e, item);
     });
 
     return card;
@@ -711,6 +973,10 @@ class FolderDashboardView extends ItemView {
             }
           });
           
+          row.addEventListener("contextmenu", (e) => {
+            this.showItemContextMenu(e, item);
+          });
+          
           const nameCell = row.createEl("td");
           const flexContainer = nameCell.createEl("div", { cls: "list-item-name-cell" });
           const iconSpan = flexContainer.createEl("span", { cls: "list-item-icon" });
@@ -812,7 +1078,86 @@ class FolderDashboardView extends ItemView {
   openFile(file) {
     this.leaf.openFile(file);
   }
+  showItemContextMenu(e, item) {
+    e.preventDefault();
+    e.stopPropagation();
+    const menu = new Menu();
+    menu.addItem((menuItem) => {
+      menuItem
+        .setTitle("Rename")
+        .setIcon("pencil")
+        .onClick(() => {
+          new RenameModal(this.app, item, async (newName) => {
+            const parentPath = item.parent ? item.parent.path : "";
+            let newPath = "";
+            if (item instanceof TFolder) {
+              newPath = parentPath === "/" || parentPath === "" ? newName : `${parentPath}/${newName}`;
+            } else {
+              newPath = parentPath === "/" || parentPath === "" ? `${newName}.md` : `${parentPath}/${newName}.md`;
+            }
+            try {
+              await this.app.fileManager.renameFile(item, newPath);
+              new Notice(`Renamed to ${newName}`);
+              this.render();
+            } catch (err) {
+              new Notice(`Error renaming: ${err.message}`);
+            }
+          }).open();
+        });
+    });
+    menu.addItem((menuItem) => {
+      menuItem
+        .setTitle("Delete")
+        .setIcon("trash")
+        .onClick(() => {
+          new DeleteConfirmModal(this.app, item, async () => {
+            try {
+              await this.app.vault.trash(item, true);
+              new Notice(`Deleted ${item instanceof TFolder ? item.name : item.basename}`);
+              this.render();
+            } catch (err) {
+              new Notice(`Error deleting: ${err.message}`);
+            }
+          }).open();
+        });
+    });
+    menu.showAtMouseEvent(e);
+  }
+  openCreateItemModal(type) {
+    new CreateItemModal(this.app, type, this.currentPath, async (name) => {
+      const parentPath = this.currentPath;
+      if (type === "note") {
+        const notePath = parentPath === "" ? `${name}.md` : `${parentPath}/${name}.md`;
+        try {
+          const newFile = await this.app.vault.create(notePath, "");
+          new Notice(`Created note: ${name}`);
+          this.openFile(newFile);
+        } catch (err) {
+          new Notice(`Error creating note: ${err.message}`);
+        }
+      } else {
+        const folderPath = parentPath === "" ? name : `${parentPath}/${name}`;
+        try {
+          await this.app.vault.createFolder(folderPath);
+          new Notice(`Created folder: ${name}`);
+          this.render();
+        } catch (err) {
+          new Notice(`Error creating folder: ${err.message}`);
+        }
+      }
+    }).open();
+  }
   handleKeyDown(e) {
+    if ((e.key === "N" || e.key === "n") && e.shiftKey && !e.ctrlKey && !e.altKey && !e.metaKey) {
+      e.preventDefault();
+      this.openCreateItemModal("note");
+      return;
+    }
+    if ((e.key === "F" || e.key === "f") && e.shiftKey && !e.ctrlKey && !e.altKey && !e.metaKey) {
+      e.preventDefault();
+      this.openCreateItemModal("folder");
+      return;
+    }
     if (e.key === "ArrowDown" || e.key === "ArrowUp" || e.key === "Tab") {
       this.isCameraTracking = true;
     }
@@ -1235,7 +1580,8 @@ class FolderDashboardPlugin extends Plugin {
         fileHeader, 
         file.path, 
         true, 
-        (targetPath) => this.activateViewAndNavigate(targetPath)
+        (targetPath) => this.activateViewAndNavigate(targetPath),
+        (targetPath) => this.activateViewAndNavigateRight(targetPath)
       );
     };
 
@@ -1306,6 +1652,20 @@ class FolderDashboardPlugin extends Plugin {
       await leaf.setViewState({ type: VIEW_TYPE, active: true });
       workspace.revealLeaf(leaf);
       const view = leaf.view;
+      if (view instanceof FolderDashboardView) {
+        view.navigateToPath(path);
+      }
+    }
+  }
+
+  async activateViewAndNavigateRight(path) {
+    const { workspace } = this.app;
+    
+    const rightLeaf = workspace.getLeaf('split', 'vertical');
+    if (rightLeaf) {
+      await rightLeaf.setViewState({ type: VIEW_TYPE, active: true });
+      workspace.revealLeaf(rightLeaf);
+      const view = rightLeaf.view;
       if (view instanceof FolderDashboardView) {
         view.navigateToPath(path);
       }
