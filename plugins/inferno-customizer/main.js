@@ -238,7 +238,7 @@ function createBreadcrumbsDOM(containerEl, path, isFile, onNavigate, onMiddleCli
     if (e.button === 1) {
       e.stopPropagation();
       e.preventDefault();
-      if (onMiddleClick) onMiddleClick("");
+      if (onMiddleClick) onMiddleClick("", e);
     }
   });
 
@@ -285,7 +285,7 @@ function createBreadcrumbsDOM(containerEl, path, isFile, onNavigate, onMiddleCli
             segments.pop();
             dirPath = segments.join("/");
           }
-          if (onMiddleClick) onMiddleClick(dirPath);
+          if (onMiddleClick) onMiddleClick(dirPath, e);
         }
       });
     });
@@ -627,7 +627,15 @@ class FolderDashboardView extends ItemView {
       this.currentPath, 
       false, 
       (targetPath) => this.navigateToPath(targetPath),
-      (targetPath) => this.plugin.activateViewAndNavigateRight(targetPath)
+      (targetPath, e) => {
+        if (e.shiftKey) {
+          this.plugin.revealInLeftExplorer(targetPath);
+        } else if (e.ctrlKey || e.metaKey) {
+          this.plugin.activateViewAndNavigateRight(targetPath);
+        } else {
+          this.plugin.activateViewAndNavigateNewTab(targetPath);
+        }
+      }
     );
   }
   updateNativeBreadcrumbs() {
@@ -673,7 +681,13 @@ class FolderDashboardView extends ItemView {
           if (e.button === 1) {
             e.stopPropagation();
             e.preventDefault();
-            this.plugin.activateViewAndNavigateRight("");
+            if (e.shiftKey) {
+              this.plugin.revealInLeftExplorer("");
+            } else if (e.ctrlKey || e.metaKey) {
+              this.plugin.activateViewAndNavigateRight("");
+            } else {
+              this.plugin.activateViewAndNavigateNewTab("");
+            }
           }
         });
         
@@ -704,7 +718,13 @@ class FolderDashboardView extends ItemView {
             if (e.button === 1) {
               e.stopPropagation();
               e.preventDefault();
-              this.plugin.activateViewAndNavigateRight(targetPath);
+              if (e.shiftKey) {
+                this.plugin.revealInLeftExplorer(targetPath);
+              } else if (e.ctrlKey || e.metaKey) {
+                this.plugin.activateViewAndNavigateRight(targetPath);
+              } else {
+                this.plugin.activateViewAndNavigateNewTab(targetPath);
+              }
             }
           });
         });
@@ -1581,7 +1601,15 @@ class FolderDashboardPlugin extends Plugin {
         file.path, 
         true, 
         (targetPath) => this.activateViewAndNavigate(targetPath),
-        (targetPath) => this.activateViewAndNavigateRight(targetPath)
+        (targetPath, e) => {
+          if (e.shiftKey) {
+            this.revealInLeftExplorer(targetPath);
+          } else if (e.ctrlKey || e.metaKey) {
+            this.activateViewAndNavigateRight(targetPath);
+          } else {
+            this.activateViewAndNavigateNewTab(targetPath);
+          }
+        }
       );
     };
 
@@ -1670,6 +1698,42 @@ class FolderDashboardPlugin extends Plugin {
         view.navigateToPath(path);
       }
     }
+    
+    this.revealInLeftExplorer(path);
+  }
+
+  revealInLeftExplorer(path) {
+    const file = path === "" ? this.app.vault.getRoot() : this.app.vault.getAbstractFileByPath(path);
+    if (!file) return;
+    
+    const leaves = this.app.workspace.getLeavesOfType("file-explorer");
+    if (leaves.length > 0) {
+      const leaf = leaves[0];
+      this.app.workspace.revealLeaf(leaf);
+      if (leaf.view && typeof leaf.view.revealInFolder === "function") {
+        try {
+          leaf.view.revealInFolder(file);
+        } catch (e) {
+          console.error("Error revealing folder in file explorer:", e);
+        }
+      }
+    }
+  }
+
+  async activateViewAndNavigateNewTab(path) {
+    const { workspace } = this.app;
+    
+    const newLeaf = workspace.getLeaf('tab');
+    if (newLeaf) {
+      await newLeaf.setViewState({ type: VIEW_TYPE, active: true });
+      workspace.revealLeaf(newLeaf);
+      const view = newLeaf.view;
+      if (view instanceof FolderDashboardView) {
+        view.navigateToPath(path);
+      }
+    }
+    
+    this.revealInLeftExplorer(path);
   }
 
   async activateViewAndStartGlobalSearch() {
