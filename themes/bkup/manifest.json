@@ -1,0 +1,9 @@
+{
+  "id": "inferno-customizer",
+  "name": "Inferno Customizer Hub",
+  "version": "1.0.0",
+  "minAppVersion": "0.15.0",
+  "description": "Consolidated plugin containing Folder Dashboard and UI customisations.",
+  "author": "Inferno & Antigravity",
+  "isDesktopOnly": false
+}

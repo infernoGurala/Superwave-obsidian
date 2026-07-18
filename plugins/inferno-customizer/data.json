@@ -7,7 +7,12 @@
     "hideFileExplorerButtons": true,
     "mermaidResize": true,
     "mermaidMaxWidth": "600px",
-    "sideToggle": true
+    "sideToggle": true,
+    "headingColor": "",
+    "boldColor": "",
+    "italicColor": "",
+    "highlightColor": "",
+    "highlightBg": ""
   },
   "dashboard": {
     "folderViewModes": {

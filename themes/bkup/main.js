@@ -205,318 +205,6 @@ class CreateItemModal extends Modal {
   }
 }
 
-class GoogleIconPickerModal extends Modal {
-  constructor(app, item, currentData, onSubmit, onReset) {
-    super(app);
-    this.item = item;
-    this.currentData = currentData || {};
-    this.onSubmit = onSubmit;
-    this.onReset = onReset;
-    this.selectedIcon = typeof currentData === 'string' ? currentData : (currentData?.icon || "");
-    this.selectedColor = (currentData && typeof currentData === 'object' && currentData.color) ? currentData.color : "";
-  }
-
-  onOpen() {
-    try {
-      if (!document.getElementById("google-material-symbols-font-link")) {
-        const linkEl = document.createElement("link");
-        linkEl.id = "google-material-symbols-font-link";
-        linkEl.rel = "stylesheet";
-        linkEl.href = "https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200";
-        document.head.appendChild(linkEl);
-      }
-
-      const { contentEl } = this;
-      contentEl.empty();
-      contentEl.addClass("google-icon-picker-modal");
-
-      const sanitizeIconName = (str) => {
-        if (!str) return "";
-        return str.trim().toLowerCase().replace(/[\s\-]+/g, "_");
-      };
-
-      const isFolder = this.item instanceof TFolder;
-      const nameStr = isFolder ? this.item.name : (this.item.basename || this.item.name || "Item");
-      this.selectedIcon = sanitizeIconName(this.selectedIcon);
-
-      contentEl.createEl("h3", { text: `Choose Icon & Color for "${nameStr}"` });
-
-      // Helpful guide text
-      const infoEl = contentEl.createEl("div", { cls: "icon-picker-info-link" });
-      infoEl.innerHTML = `💡 Google Icons use lowercase <code>snake_case</code> (e.g. <code>auto_awesome</code>, <code>smart_toy</code>). Typing <strong>"Star Shine"</strong> auto-formats to <code>star_shine</code>!`;
-
-      // Live Preview Container
-      const previewContainer = contentEl.createEl("div", { cls: "icon-picker-preview-container" });
-      const previewIconEl = previewContainer.createEl("span", {
-        cls: "material-symbols-outlined icon-picker-preview-icon"
-      });
-      const previewLabelEl = previewContainer.createEl("span", {
-        text: nameStr,
-        cls: "icon-picker-preview-label"
-      });
-
-      const updatePreview = () => {
-        if (this.selectedIcon) {
-          previewIconEl.className = "material-symbols-outlined icon-picker-preview-icon";
-          previewIconEl.textContent = this.selectedIcon;
-        } else {
-          previewIconEl.className = "icon-picker-preview-icon";
-          previewIconEl.textContent = "";
-          setIcon(previewIconEl, isFolder ? "folder" : "file-text");
-        }
-        previewIconEl.style.color = this.selectedColor || "";
-      };
-
-      // Search Row + Custom Text Input
-      const searchRow = contentEl.createEl("div", { cls: "icon-picker-input-row" });
-      const searchInput = searchRow.createEl("input", {
-        type: "text",
-        placeholder: "Search Google Icons (star, trash, rocket, code, folder)...",
-        cls: "icon-picker-search-input"
-      });
-
-      const customIconInput = searchRow.createEl("input", {
-        type: "text",
-        placeholder: "Custom icon name...",
-        value: this.selectedIcon || "",
-        cls: "icon-picker-custom-input"
-      });
-
-      // Color Selector Row
-      const colorSection = contentEl.createEl("div", { cls: "icon-picker-color-section" });
-      colorSection.createEl("span", { text: "Color:", cls: "icon-picker-color-title" });
-
-      const presets = [
-        { name: "Default", color: "" },
-        { name: "Accent Green", color: "#47a976" },
-        { name: "Inferno Orange", color: "#f97316" },
-        { name: "Crimson Red", color: "#ef4444" },
-        { name: "Electric Purple", color: "#a855f7" },
-        { name: "Cyan Blue", color: "#06b6d4" },
-        { name: "Gold Yellow", color: "#eab308" },
-        { name: "Muted Gray", color: "#9ca3af" },
-        { name: "White", color: "#ffffff" }
-      ];
-
-      const swatchesContainer = colorSection.createEl("div", { cls: "icon-color-swatches" });
-      const colorInput = colorSection.createEl("input", {
-        type: "color",
-        value: this.selectedColor || "#47a976",
-        cls: "icon-picker-color-input"
-      });
-
-      presets.forEach(p => {
-        const swatch = swatchesContainer.createEl("div", {
-          cls: `icon-color-swatch ${this.selectedColor === p.color ? 'is-selected' : ''}`,
-          title: p.name
-        });
-        if (p.color) {
-          swatch.style.backgroundColor = p.color;
-        } else {
-          swatch.classList.add("swatch-default");
-          swatch.textContent = "∅";
-        }
-        swatch.addEventListener("click", () => {
-          this.selectedColor = p.color;
-          colorInput.value = p.color || "#ffffff";
-          swatchesContainer.querySelectorAll(".icon-color-swatch").forEach(s => s.classList.remove("is-selected"));
-          swatch.classList.add("is-selected");
-          updatePreview();
-        });
-      });
-
-      colorInput.addEventListener("input", (e) => {
-        this.selectedColor = e.target.value;
-        swatchesContainer.querySelectorAll(".icon-color-swatch").forEach(s => s.classList.remove("is-selected"));
-        updatePreview();
-      });
-
-      // Icons Grid Catalog with keyword aliases
-      const iconCatalog = [
-        { name: "delete", tags: ["trash", "bin", "remove", "garbage"] },
-        { name: "delete_forever", tags: ["trash", "destroy"] },
-        { name: "folder", tags: ["directory", "category"] },
-        { name: "folder_special", tags: ["favorite", "star"] },
-        { name: "folder_open", tags: ["open"] },
-        { name: "folder_shared", tags: ["share", "users"] },
-        { name: "inventory_2", tags: ["archive", "box", "storage"] },
-        { name: "archive", tags: ["box", "store"] },
-        { name: "description", tags: ["file", "note", "doc", "text"] },
-        { name: "article", tags: ["paper", "news", "post"] },
-        { name: "draft", tags: ["edit", "file"] },
-        { name: "task", tags: ["todo", "check", "list"] },
-        { name: "assignment", tags: ["task", "clipboard"] },
-        { name: "history_edu", tags: ["book", "journal", "write"] },
-        { name: "menu_book", tags: ["book", "read", "library"] },
-        { name: "note_add", tags: ["create", "new", "file"] },
-        { name: "sticky_note_2", tags: ["note", "memo"] },
-        { name: "code", tags: ["developer", "script", "programming"] },
-        { name: "terminal", tags: ["cli", "cmd", "console", "shell"] },
-        { name: "developer_board", tags: ["cpu", "chip", "hardware"] },
-        { name: "database", tags: ["db", "storage", "sql"] },
-        { name: "cloud", tags: ["network", "drive"] },
-        { name: "api", tags: ["rest", "web", "connect"] },
-        { name: "bug_report", tags: ["bug", "issue", "error"] },
-        { name: "memory", tags: ["ram", "chip"] },
-        { name: "storage", tags: ["disk", "drive"] },
-        { name: "web", tags: ["site", "browser", "html"] },
-        { name: "palette", tags: ["color", "art", "paint", "design"] },
-        { name: "image", tags: ["photo", "picture", "png", "jpg"] },
-        { name: "movie", tags: ["video", "film", "media"] },
-        { name: "music_note", tags: ["audio", "song", "mp3"] },
-        { name: "mic", tags: ["audio", "record", "voice"] },
-        { name: "photo_camera", tags: ["camera", "snap"] },
-        { name: "brush", tags: ["paint", "art", "draw"] },
-        { name: "auto_awesome", tags: ["star shine", "star_shine", "sparkles", "shine", "ai", "magic", "star"] },
-        { name: "design_services", tags: ["draft", "pen", "tool"] },
-        { name: "draw", tags: ["sketch", "pencil"] },
-        { name: "star", tags: ["star shine", "star_shine", "favorite", "bookmark", "rating"] },
-        { name: "grade", tags: ["star shine", "star", "rating"] },
-        { name: "star_rate", tags: ["star shine", "star_shine", "star"] },
-        { name: "favorite", tags: ["heart", "love", "like"] },
-        { name: "bookmark", tags: ["save", "ribbon"] },
-        { name: "flag", tags: ["mark", "country"] },
-        { name: "label", tags: ["tag", "badge"] },
-        { name: "push_pin", tags: ["pin", "fix"] },
-        { name: "verified", tags: ["check", "badge"] },
-        { name: "shield", tags: ["security", "guard"] },
-        { name: "lock", tags: ["secure", "password", "private"] },
-        { name: "key", tags: ["auth", "secret", "pass"] },
-        { name: "workspace_premium", tags: ["crown", "award", "badge"] },
-        { name: "home", tags: ["house", "root"] },
-        { name: "dashboard", tags: ["board", "layout", "cards"] },
-        { name: "rocket", tags: ["launch", "ship", "fast"] },
-        { name: "eco", tags: ["leaf", "green", "nature"] },
-        { name: "bolt", tags: ["lightning", "power", "flash"] },
-        { name: "lightbulb", tags: ["idea", "bright"] },
-        { name: "construction", tags: ["tools", "wrench", "fix"] },
-        { name: "settings", tags: ["gear", "cog", "option", "config"] },
-        { name: "search", tags: ["find", "magnifier", "lookup"] },
-        { name: "calendar_today", tags: ["date", "event", "schedule"] },
-        { name: "event", tags: ["calendar", "meeting"] },
-        { name: "savings", tags: ["piggy", "money", "finance"] },
-        { name: "payments", tags: ["card", "money", "cost"] },
-        { name: "shopping_cart", tags: ["buy", "store"] },
-        { name: "fitness_center", tags: ["gym", "workout", "dumbbell"] },
-        { name: "medical_services", tags: ["health", "hospital", "plus"] },
-        { name: "directions_car", tags: ["car", "vehicle", "auto"] },
-        { name: "school", tags: ["education", "hat", "cap", "study"] },
-        { name: "work", tags: ["briefcase", "job", "office"] },
-        { name: "edit", tags: ["pencil", "modify", "rename"] },
-        { name: "tune", tags: ["sliders", "adjust", "controls"] },
-        { name: "checklist", tags: ["todo", "tasks", "list"] },
-        { name: "psychology", tags: ["brain", "mind", "think", "ai"] },
-        { name: "science", tags: ["flask", "chemistry", "lab"] },
-        { name: "pets", tags: ["dog", "cat", "animal", "paw"] },
-        { name: "smart_toy", tags: ["bot", "robot", "ai"] },
-        { name: "public", tags: ["globe", "world", "earth"] },
-        { name: "language", tags: ["translate", "globe"] },
-        { name: "local_fire_department", tags: ["fire", "hot", "flame"] },
-        { name: "visibility", tags: ["eye", "show", "view"] },
-        { name: "forum", tags: ["chat", "comments", "messages"] },
-        { name: "groups", tags: ["team", "people", "users"] },
-        { name: "person", tags: ["user", "account", "profile"] },
-        { name: "attach_file", tags: ["paperclip", "link", "attachment"] },
-        { name: "link", tags: ["url", "chain", "web"] }
-      ];
-
-      const gridContainer = contentEl.createEl("div", { cls: "icon-picker-grid" });
-
-      const renderGrid = (filterQuery = "") => {
-        gridContainer.empty();
-        const rawQuery = filterQuery.toLowerCase().trim();
-        const snakeQuery = sanitizeIconName(rawQuery);
-        const filtered = iconCatalog.filter(ic => 
-          ic.name.includes(rawQuery) || 
-          ic.name.includes(snakeQuery) || 
-          (ic.tags && ic.tags.some(tag => tag.includes(rawQuery) || tag.includes(snakeQuery)))
-        );
-
-        if (filtered.length === 0) {
-          gridContainer.createEl("div", {
-            text: `No built-in icons matching "${rawQuery}". Custom icon "${snakeQuery}" will be applied!`,
-            cls: "icon-picker-no-results"
-          });
-          return;
-        }
-
-        filtered.forEach(item => {
-          const iconName = item.name;
-          const itemBtn = gridContainer.createEl("button", {
-            cls: `icon-picker-grid-item ${this.selectedIcon === iconName ? "is-selected" : ""}`,
-            title: iconName
-          });
-          itemBtn.createEl("span", {
-            cls: "material-symbols-outlined",
-            text: iconName
-          });
-          itemBtn.createEl("span", { text: iconName, cls: "icon-picker-grid-name" });
-
-          itemBtn.addEventListener("click", () => {
-            this.selectedIcon = iconName;
-            customIconInput.value = iconName;
-            gridContainer.querySelectorAll(".icon-picker-grid-item").forEach(b => b.classList.remove("is-selected"));
-            itemBtn.classList.add("is-selected");
-            updatePreview();
-          });
-        });
-      };
-
-      customIconInput.addEventListener("input", (e) => {
-        const val = e.target.value;
-        const sanitized = sanitizeIconName(val);
-        this.selectedIcon = sanitized;
-        updatePreview();
-        renderGrid(searchInput.value);
-      });
-
-      searchInput.addEventListener("input", (e) => {
-        const val = e.target.value;
-        const sanitized = sanitizeIconName(val);
-        this.selectedIcon = sanitized;
-        customIconInput.value = sanitized;
-        updatePreview();
-        renderGrid(val);
-      });
-
-      updatePreview();
-      renderGrid();
-
-      // Footer Actions
-      const buttonContainer = contentEl.createEl("div", { cls: "icon-picker-actions" });
-
-      if (this.onReset) {
-        const resetBtn = buttonContainer.createEl("button", { text: "Reset Default", cls: "mod-warning" });
-        resetBtn.style.marginRight = "auto";
-        resetBtn.addEventListener("click", () => {
-          this.onReset();
-          this.close();
-        });
-      }
-
-      const cancelBtn = buttonContainer.createEl("button", { text: "Cancel" });
-      cancelBtn.addEventListener("click", () => this.close());
-
-      const submitBtn = buttonContainer.createEl("button", { text: "Save Icon & Color", cls: "mod-cta" });
-      submitBtn.addEventListener("click", () => {
-        this.onSubmit({
-          icon: this.selectedIcon,
-          color: this.selectedColor
-        });
-        this.close();
-      });
-    } catch (err) {
-      console.error("Error opening GoogleIconPickerModal:", err);
-      new Notice(`Error opening Icon Picker: ${err.message}`);
-    }
-  }
-
-  onClose() {
-    const { contentEl } = this;
-    contentEl.empty();
-  }
-}
-
 
 const VIEW_TYPE = "folder-dashboard-view";
 
@@ -640,37 +328,6 @@ class FolderDashboardView extends ItemView {
   }
   getIcon() {
     return "folder";
-  }
-  async getCustomIconsMap() {
-    const hubPlugin = this.app.plugins?.plugins?.["inferno-customizer"];
-    const customPath = hubPlugin?.settings?.iconsStoragePath || ".obsidian/inferno-custom-icons.json";
-    try {
-      const exists = await this.app.vault.adapter.exists(customPath);
-      if (exists) {
-        const raw = await this.app.vault.adapter.read(customPath);
-        return JSON.parse(raw) || {};
-      }
-    } catch (err) {
-      console.warn("Failed reading custom icons map from", customPath, err);
-    }
-    const data = await this.plugin.loadData();
-    return data.customIcons || {};
-  }
-  async saveCustomIconsMap(iconsMap) {
-    const hubPlugin = this.app.plugins?.plugins?.["inferno-customizer"];
-    const customPath = hubPlugin?.settings?.iconsStoragePath || ".obsidian/inferno-custom-icons.json";
-    try {
-      const folderPath = customPath.substring(0, customPath.lastIndexOf("/"));
-      if (folderPath && !(await this.app.vault.adapter.exists(folderPath))) {
-        await this.app.vault.adapter.mkdir(folderPath);
-      }
-      await this.app.vault.adapter.write(customPath, JSON.stringify(iconsMap, null, 2));
-    } catch (err) {
-      console.error("Failed saving custom icons map to", customPath, err);
-    }
-    const data = await this.plugin.loadData();
-    data.customIcons = iconsMap;
-    await this.plugin.saveData(data);
   }
   async onOpen() {
     const container = this.containerEl.children[1];
@@ -951,8 +608,7 @@ class FolderDashboardView extends ItemView {
     this.isCameraTracking = true;
     this.renderItems();
   }
-  async render() {
-    this.customIconsMap = await this.getCustomIconsMap();
+  render() {
     this.updateNativeBreadcrumbs();
     this.renderBreadcrumbs();
     this.renderViewSwitcherHUD(this.headerEl);
@@ -1098,23 +754,7 @@ class FolderDashboardView extends ItemView {
     // Title Row with Icon
     const titleRow = card.createEl("div", { cls: "card-title-row" });
     const iconSpan = titleRow.createEl("span", { cls: "card-title-icon" });
-    const customData = this.customIconsMap?.[item.path];
-    if (customData) {
-      const iconName = typeof customData === 'string' ? customData : customData?.icon;
-      const iconColor = (customData && typeof customData === 'object') ? customData.color : null;
-      if (iconName) {
-        iconSpan.empty();
-        const gIcon = iconSpan.createEl("span", {
-          cls: "material-symbols-outlined inferno-custom-icon",
-          text: iconName
-        });
-        if (iconColor) gIcon.style.color = iconColor;
-      } else {
-        setIcon(iconSpan, isFolder ? "folder" : "file-text");
-      }
-    } else {
-      setIcon(iconSpan, isFolder ? "folder" : "file-text");
-    }
+    setIcon(iconSpan, isFolder ? "folder" : "file-text");
     titleRow.createEl("span", { text: isFolder ? item.name : item.basename, cls: "card-title-text" });
 
     // Bottom row: subtitle
@@ -1360,23 +1000,7 @@ class FolderDashboardView extends ItemView {
           const nameCell = row.createEl("td");
           const flexContainer = nameCell.createEl("div", { cls: "list-item-name-cell" });
           const iconSpan = flexContainer.createEl("span", { cls: "list-item-icon" });
-          const customData = this.customIconsMap?.[item.path];
-          if (customData) {
-            const iconName = typeof customData === 'string' ? customData : customData?.icon;
-            const iconColor = (customData && typeof customData === 'object') ? customData.color : null;
-            if (iconName) {
-              iconSpan.empty();
-              const gIcon = iconSpan.createEl("span", {
-                cls: "material-symbols-outlined inferno-custom-icon",
-                text: iconName
-              });
-              if (iconColor) gIcon.style.color = iconColor;
-            } else {
-              setIcon(iconSpan, isFolder ? "folder" : "file-text");
-            }
-          } else {
-            setIcon(iconSpan, isFolder ? "folder" : "file-text");
-          }
+          setIcon(iconSpan, isFolder ? "folder" : "file-text");
           flexContainer.createEl("span", { text: isFolder ? item.name : item.basename });
           
           const typeCell = row.createEl("td", { cls: "list-item-type-cell" });
@@ -1478,63 +1102,12 @@ class FolderDashboardView extends ItemView {
     e.preventDefault();
     e.stopPropagation();
     const menu = new Menu();
-
-    menu.addItem((menuItem) => {
-      menuItem
-        .setTitle("Change Icon & Color")
-        .setIcon("palette")
-        .onClick(() => {
-          try {
-            const currentData = this.customIconsMap ? this.customIconsMap[item.path] : null;
-            const modal = new GoogleIconPickerModal(
-              this.app,
-              item,
-              currentData,
-              async (selectedData) => {
-                if (!this.customIconsMap) this.customIconsMap = {};
-                this.customIconsMap[item.path] = selectedData;
-                await this.saveCustomIconsMap(this.customIconsMap);
-                new Notice(`Updated icon for ${item.name || item.basename || "item"}`);
-                await this.render();
-              },
-              async () => {
-                if (this.customIconsMap && this.customIconsMap[item.path]) {
-                  delete this.customIconsMap[item.path];
-                  await this.saveCustomIconsMap(this.customIconsMap);
-                  new Notice(`Reset icon for ${item.name || item.basename || "item"}`);
-                  await this.render();
-                }
-              }
-            );
-            modal.open();
-          } catch (err) {
-            console.error("Error launching icon picker modal:", err);
-            new Notice(`Failed to open icon picker: ${err.message}`);
-          }
-        });
-    });
-
-    if (this.customIconsMap && this.customIconsMap[item.path]) {
-      menu.addItem((menuItem) => {
-        menuItem
-          .setTitle("Reset Icon to Default")
-          .setIcon("rotate-ccw")
-          .onClick(async () => {
-            delete this.customIconsMap[item.path];
-            await this.saveCustomIconsMap(this.customIconsMap);
-            new Notice(`Reset icon for ${item.name || item.basename}`);
-            this.render();
-          });
-      });
-    }
-
     menu.addItem((menuItem) => {
       menuItem
         .setTitle("Rename")
         .setIcon("pencil")
         .onClick(() => {
           new RenameModal(this.app, item, async (newName) => {
-            const oldPath = item.path;
             const parentPath = item.parent ? item.parent.path : "";
             let newPath = "";
             if (item instanceof TFolder) {
@@ -1544,11 +1117,6 @@ class FolderDashboardView extends ItemView {
             }
             try {
               await this.app.fileManager.renameFile(item, newPath);
-              if (this.customIconsMap && this.customIconsMap[oldPath]) {
-                this.customIconsMap[newPath] = this.customIconsMap[oldPath];
-                delete this.customIconsMap[oldPath];
-                await this.saveCustomIconsMap(this.customIconsMap);
-              }
               new Notice(`Renamed to ${newName}`);
               this.render();
             } catch (err) {
@@ -1557,20 +1125,14 @@ class FolderDashboardView extends ItemView {
           }).open();
         });
     });
-
     menu.addItem((menuItem) => {
       menuItem
         .setTitle("Delete")
         .setIcon("trash")
         .onClick(() => {
           new DeleteConfirmModal(this.app, item, async () => {
-            const oldPath = item.path;
             try {
               await this.app.vault.trash(item, true);
-              if (this.customIconsMap && this.customIconsMap[oldPath]) {
-                delete this.customIconsMap[oldPath];
-                await this.saveCustomIconsMap(this.customIconsMap);
-              }
               new Notice(`Deleted ${item instanceof TFolder ? item.name : item.basename}`);
               this.render();
             } catch (err) {
@@ -1579,7 +1141,6 @@ class FolderDashboardView extends ItemView {
           }).open();
         });
     });
-
     menu.showAtMouseEvent(e);
   }
   openCreateItemModal(type) {
@@ -2373,17 +1934,9 @@ module.exports = class InfernoCustomizerPlugin extends Plugin {
         hideFileExplorerButtons: true,
         mermaidResize: true,
         mermaidMaxWidth: "600px",
-        sideToggle: true,
-        headingColor: "",
-        boldColor: "",
-        italicColor: "",
-        highlightColor: "",
-        highlightBg: ""
+        sideToggle: true
       };
       await this.saveData(data);
-    }
-    if (!data.iconsStoragePath) {
-      data.iconsStoragePath = ".obsidian/inferno-custom-icons.json";
     }
     return data;
   }
@@ -2394,14 +1947,6 @@ module.exports = class InfernoCustomizerPlugin extends Plugin {
   }
 
   async injectStyles() {
-    if (!document.getElementById("google-material-symbols-font-link")) {
-      const linkEl = document.createElement("link");
-      linkEl.id = "google-material-symbols-font-link";
-      linkEl.rel = "stylesheet";
-      linkEl.href = "https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200";
-      document.head.appendChild(linkEl);
-    }
-
     let styleEl = document.getElementById("inferno-customizer-dynamic-styles");
     if (!styleEl) {
       styleEl = document.createElement("style");
@@ -2458,51 +2003,6 @@ module.exports = class InfernoCustomizerPlugin extends Plugin {
         .mermaid svg {
             max-width: ${maxW} !important;
             height: auto !important;
-        }
-      `;
-    }
-
-    // 10. Custom Headings, Bold, and Italic Colors
-    if (s.headingColor) {
-      css += `
-        body { --heading-color: ${s.headingColor} !important; }
-        .markdown-rendered h1, .markdown-rendered h2, .markdown-rendered h3,
-        .markdown-rendered h4, .markdown-rendered h5, .markdown-rendered h6,
-        .cm-header-1, .cm-header-2, .cm-header-3, .cm-header-4, .cm-header-5, .cm-header-6,
-        .HyperMD-header, .inline-title {
-          color: ${s.headingColor} !important;
-        }
-      `;
-    }
-    if (s.boldColor) {
-      css += `
-        body { --bold-color: ${s.boldColor} !important; }
-        strong, b, .cm-strong, .markdown-rendered strong, .markdown-rendered b {
-          color: ${s.boldColor} !important;
-        }
-      `;
-    }
-    if (s.italicColor) {
-      css += `
-        body { --italic-color: ${s.italicColor} !important; }
-        em, i, .cm-em, .markdown-rendered em, .markdown-rendered i {
-          color: ${s.italicColor} !important;
-        }
-      `;
-    }
-    if (s.highlightColor) {
-      css += `
-        body { --highlight-color: ${s.highlightColor} !important; }
-        mark, .cm-highlight, .markdown-rendered mark {
-          color: ${s.highlightColor} !important;
-        }
-      `;
-    }
-    if (s.highlightBg) {
-      css += `
-        body { --highlight-bg: ${s.highlightBg} !important; }
-        mark, .cm-highlight, .markdown-rendered mark {
-          background-color: ${s.highlightBg} !important;
         }
       `;
     }
@@ -2662,117 +2162,6 @@ class InfernoCustomizerSettingTab extends PluginSettingTab {
         s.mermaidMaxWidth = val;
         await this.plugin.saveSettings();
       }));
-
-    containerEl.createEl("h3", { text: "Typography & Colors (Dragon Theme & Vault)" });
-
-    new Setting(containerEl)
-      .setName("Headings Color (HEX)")
-      .setDesc("Set custom HEX color for headings and note titles (e.g. #47a976).")
-      .addColorPicker(cb => cb
-        .setValue(s.headingColor || "#47a976")
-        .onChange(async val => {
-          s.headingColor = val;
-          await this.plugin.saveSettings();
-        })
-      )
-      .addText(cb => cb
-        .setPlaceholder("#47a976")
-        .setValue(s.headingColor || "")
-        .onChange(async val => {
-          s.headingColor = val.trim();
-          await this.plugin.saveSettings();
-        })
-      );
-
-    new Setting(containerEl)
-      .setName("Bold Text Color (HEX)")
-      .setDesc("Set custom HEX color for bold text (**bold**).")
-      .addColorPicker(cb => cb
-        .setValue(s.boldColor || "#47a976")
-        .onChange(async val => {
-          s.boldColor = val;
-          await this.plugin.saveSettings();
-        })
-      )
-      .addText(cb => cb
-        .setPlaceholder("#47a976")
-        .setValue(s.boldColor || "")
-        .onChange(async val => {
-          s.boldColor = val.trim();
-          await this.plugin.saveSettings();
-        })
-      );
-
-    new Setting(containerEl)
-      .setName("Italic Text Color (HEX)")
-      .setDesc("Set custom HEX color for italic text (*italic*).")
-      .addColorPicker(cb => cb
-        .setValue(s.italicColor || "#47a976")
-        .onChange(async val => {
-          s.italicColor = val;
-          await this.plugin.saveSettings();
-        })
-      )
-      .addText(cb => cb
-        .setPlaceholder("#47a976")
-        .setValue(s.italicColor || "")
-        .onChange(async val => {
-          s.italicColor = val.trim();
-          await this.plugin.saveSettings();
-        })
-      );
-
-    new Setting(containerEl)
-      .setName("Highlight Text Color (HEX)")
-      .setDesc("Set custom HEX color for highlighted text (==highlight==).")
-      .addColorPicker(cb => cb
-        .setValue(s.highlightColor || "#dadada")
-        .onChange(async val => {
-          s.highlightColor = val;
-          await this.plugin.saveSettings();
-        })
-      )
-      .addText(cb => cb
-        .setPlaceholder("#dadada")
-        .setValue(s.highlightColor || "")
-        .onChange(async val => {
-          s.highlightColor = val.trim();
-          await this.plugin.saveSettings();
-        })
-      );
-
-    new Setting(containerEl)
-      .setName("Highlight Background Color (HEX)")
-      .setDesc("Set custom HEX background color for highlighted text (==highlight==).")
-      .addColorPicker(cb => cb
-        .setValue(s.highlightBg || "#47a97644")
-        .onChange(async val => {
-          s.highlightBg = val;
-          await this.plugin.saveSettings();
-        })
-      )
-      .addText(cb => cb
-        .setPlaceholder("#47a97644")
-        .setValue(s.highlightBg || "")
-        .onChange(async val => {
-          s.highlightBg = val.trim();
-          await this.plugin.saveSettings();
-        })
-      );
-
-    containerEl.createEl("h3", { text: "Custom Icons Persistence" });
-
-    new Setting(containerEl)
-      .setName("Custom Icons Storage Location")
-      .setDesc("Vault file path where custom icon and color assignments are saved (survives plugin uninstalls/reinstallation).")
-      .addText(cb => cb
-        .setPlaceholder(".obsidian/inferno-custom-icons.json")
-        .setValue(this.plugin.settings.iconsStoragePath || ".obsidian/inferno-custom-icons.json")
-        .onChange(async val => {
-          this.plugin.settings.iconsStoragePath = val.trim() || ".obsidian/inferno-custom-icons.json";
-          await this.plugin.saveSettings();
-        })
-      );
 
     containerEl.createEl("h3", { text: "Shortcuts" });
 

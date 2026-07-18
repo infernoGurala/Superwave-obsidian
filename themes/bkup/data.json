@@ -1,0 +1,253 @@
+{
+  "customStyles": {
+    "hideAttachments": true,
+    "attachmentsPath": "attachments",
+    "hideIcons": true,
+    "hideSearchAndBookmarks": true,
+    "hideFileExplorerButtons": true,
+    "mermaidResize": true,
+    "mermaidMaxWidth": "600px",
+    "sideToggle": true
+  },
+  "dashboard": {
+    "folderViewModes": {
+      "": "board",
+      "GARBAGE": "dashboard",
+      "SCRATCH": "dashboard",
+      "STUDIO": "list",
+      "PERMANENT/FILM": "list",
+      "PERMANENT": "board",
+      "PROGRESS": "board",
+      "WISDOM/Creative-visualization": "list",
+      "WISDOM": "dashboard"
+    },
+    "boardPositions": {
+      "": {
+        "Archives": {
+          "x": 1235,
+          "y": 587
+        },
+        "INFerno": {
+          "x": 10,
+          "y": 23
+        },
+        "GARBAGE": {
+          "x": 472,
+          "y": 159
+        },
+        "KNOWLEDGE": {
+          "x": 710,
+          "y": 201
+        },
+        "PERMANENT": {
+          "x": 763,
+          "y": 447
+        },
+        "PROGRESS": {
+          "x": 825,
+          "y": 706
+        },
+        "PROJECTS": {
+          "x": -49,
+          "y": 348
+        },
+        "Statements.md": {
+          "x": 324,
+          "y": 20
+        },
+        "Utopia tpp.md": {
+          "x": 725,
+          "y": 167
+        },
+        "SCRATCH": {
+          "x": 524,
+          "y": 46
+        },
+        "STUDIO": {
+          "x": 354,
+          "y": 384
+        },
+        "03 Permanent notes": {
+          "x": 94,
+          "y": 291
+        },
+        "Reflection.md": {
+          "x": 331,
+          "y": 312
+        },
+        "Calender": {
+          "x": 452,
+          "y": 164
+        },
+        "FLEETING NOTES": {
+          "x": -138,
+          "y": 57
+        },
+        "PROGRESS NOTES": {
+          "x": 91,
+          "y": 192
+        },
+        "PERMANENT NOTES": {
+          "x": 218,
+          "y": 350
+        },
+        "Untitled.md": {
+          "x": -292,
+          "y": 390
+        },
+        "Obsidian feature test — master template.md": {
+          "x": 435,
+          "y": 634
+        },
+        "Welcome.md": {
+          "x": 419,
+          "y": 152
+        },
+        "ARCHIVE": {
+          "x": 370,
+          "y": 192
+        },
+        "PLANS": {
+          "x": 485,
+          "y": 349
+        },
+        "Scratch": {
+          "x": 404,
+          "y": 632
+        },
+        "WISDOM": {
+          "x": 1187,
+          "y": 303
+        },
+        "scratch.md": {
+          "x": 262,
+          "y": 536
+        },
+        "OneNote": {
+          "x": 10,
+          "y": 397
+        }
+      },
+      "PERMANENT": {
+        "PERMANENT/Theory of Machines": {
+          "x": 1058,
+          "y": 720
+        },
+        "PERMANENT/Thermodynamics": {
+          "x": 1273,
+          "y": 894
+        },
+        "PERMANENT/Strength of Materials": {
+          "x": 1413,
+          "y": 712
+        },
+        "PERMANENT/Fluid Mechanics": {
+          "x": 1228,
+          "y": 501
+        },
+        "PERMANENT/Computer science": {
+          "x": -319,
+          "y": 173
+        },
+        "PERMANENT/Health": {
+          "x": -497,
+          "y": 572
+        },
+        "PERMANENT/Inferno": {
+          "x": 748,
+          "y": 142
+        },
+        "PERMANENT/Electrical and Electronics": {
+          "x": 895,
+          "y": 529
+        },
+        "PERMANENT/inSight": {
+          "x": 221,
+          "y": 542
+        },
+        "PERMANENT/IOT": {
+          "x": -161,
+          "y": 773
+        },
+        "PERMANENT/Interceptor": {
+          "x": -140,
+          "y": 401
+        },
+        "PERMANENT/Math": {
+          "x": 1585,
+          "y": 362
+        },
+        "PERMANENT/PASSWORDS": {
+          "x": -486,
+          "y": 731
+        },
+        "PERMANENT/Schemantics": {
+          "x": 220,
+          "y": 729
+        },
+        "PERMANENT/Science": {
+          "x": 203,
+          "y": 342
+        },
+        "PERMANENT/Semesters": {
+          "x": 412,
+          "y": 142
+        },
+        "PERMANENT/Utopia": {
+          "x": -143,
+          "y": 587
+        },
+        "PERMANENT/Wisdom": {
+          "x": -538,
+          "y": 384
+        },
+        "PERMANENT/FILM": {
+          "x": 1388,
+          "y": 196
+        },
+        "PERMANENT/Chemistry": {
+          "x": 1577,
+          "y": 543
+        },
+        "PERMANENT/Freesources": {
+          "x": 540,
+          "y": 553
+        },
+        "PERMANENT/Delve": {
+          "x": 528,
+          "y": 357
+        },
+        "PERMANENT/Artificial Intelligence": {
+          "x": 47,
+          "y": 176
+        }
+      },
+      "PROGRESS": {
+        "PROGRESS/00-daily.md": {
+          "x": 818,
+          "y": 262
+        },
+        "PROGRESS/00-routine.md": {
+          "x": 809,
+          "y": 90
+        },
+        "PROGRESS/00-to-day.md": {
+          "x": 808,
+          "y": 439
+        },
+        "PROGRESS/01-on-going.md": {
+          "x": 1139,
+          "y": 409
+        },
+        "PROGRESS/02-in-coming.md": {
+          "x": 1149,
+          "y": 236
+        },
+        "PROGRESS/Images-daily.md": {
+          "x": 1144,
+          "y": 84
+        }
+      }
+    }
+  }
+}

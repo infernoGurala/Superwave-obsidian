@@ -1,0 +1,182 @@
+/*
+  Dragon Theme for Obsidian
+  Adapting Background and Text colors with customizable Headings, Bold, and Italic HEX colors.
+*/
+
+/* @settings
+
+name: Dragon Theme Settings
+id: dragon-theme
+settings:
+    -
+        id: headings-section
+        type: heading
+        level: 1
+        collapsed: true
+        title: Headings & Emphasis
+    -
+        id: heading-color
+        type: variable-themed-color
+        title: All Headings Color
+        format: hex
+        default-light: '#47a976'
+        default-dark: '#47a976'
+    -
+        id: h1-color
+        type: variable-themed-color
+        title: Heading 1 Color
+        format: hex
+        default-light: '#47a976'
+        default-dark: '#47a976'
+    -
+        id: h2-color
+        type: variable-themed-color
+        title: Heading 2 Color
+        format: hex
+        default-light: '#47a976'
+        default-dark: '#47a976'
+    -
+        id: h3-color
+        type: variable-themed-color
+        title: Heading 3 Color
+        format: hex
+        default-light: '#47a976'
+        default-dark: '#47a976'
+    -
+        id: h4-color
+        type: variable-themed-color
+        title: Heading 4 Color
+        format: hex
+        default-light: '#47a976'
+        default-dark: '#47a976'
+    -
+        id: h5-color
+        type: variable-themed-color
+        title: Heading 5 Color
+        format: hex
+        default-light: '#47a976'
+        default-dark: '#47a976'
+    -
+        id: h6-color
+        type: variable-themed-color
+        title: Heading 6 Color
+        format: hex
+        default-light: '#47a976'
+        default-dark: '#47a976'
+    -
+        id: bold-color
+        type: variable-themed-color
+        title: Bold Text Color
+        format: hex
+        default-light: '#47a976'
+        default-dark: '#47a976'
+    -
+        id: italic-color
+        type: variable-themed-color
+        title: Italic Text Color
+        format: hex
+        default-light: '#47a976'
+        default-dark: '#47a976'
+    -
+        id: highlight-color
+        type: variable-themed-color
+        title: Highlight Text Color
+        format: hex
+        default-light: '#dadada'
+        default-dark: '#dadada'
+    -
+        id: highlight-bg
+        type: variable-themed-color
+        title: Highlight Background Color
+        format: hex
+        default-light: '#47a97644'
+        default-dark: '#47a97644'
+*/
+
+.theme-dark {
+  --background-primary: #191919 !important;
+  --background-primary-alt: #0a0a0a !important;
+  --background-secondary: #0a0a0a !important;
+  --background-secondary-alt: #0a0a0a !important;
+  --text-normal: #dadada !important;
+  --text-muted: #b1b1b1 !important;
+  --text-faint: #7f7f7f !important;
+}
+
+.theme-light {
+  --background-primary: hsla(35, 36%, 96%, 1) !important;
+  --background-primary-alt: hsla(35, 37%, 92%, 1) !important;
+  --background-secondary: hsla(34, 34%, 90%, 1) !important;
+  --background-secondary-alt: hsla(34, 34%, 90%, 1) !important;
+  --text-normal: hsla(31, 45%, 24%, 1) !important;
+  --text-muted: hsla(35, 28%, 40%, 1) !important;
+  --text-faint: hsla(34, 29%, 60%, 1) !important;
+}
+
+body.theme-dark, body.theme-light, :root {
+  /* Default HEX colors for Headings, Bold, and Italic (fallback to active accent color) */
+  --heading-color: var(--interactive-accent);
+  --h1-color: var(--heading-color);
+  --h2-color: var(--heading-color);
+  --h3-color: var(--heading-color);
+  --h4-color: var(--heading-color);
+  --h5-color: var(--heading-color);
+  --h6-color: var(--heading-color);
+
+  --bold-color: var(--interactive-accent);
+  --italic-color: var(--interactive-accent);
+
+  --highlight-color: var(--text-normal);
+  --highlight-bg: rgba(71, 169, 118, 0.25);
+}
+
+/* Make note titles follow the heading color / active accent color */
+.inline-title,
+.view-header-title {
+  color: var(--heading-color, var(--interactive-accent)) !important;
+}
+
+/* Make note card/list titles follow the active accent color in folder dashboard */
+.file-card .card-title-text {
+  color: var(--interactive-accent) !important;
+}
+.file-row .list-item-name-cell span:not(.list-item-icon) {
+  color: var(--interactive-accent) !important;
+}
+
+/* Headings follow customizable heading color (defaults to active accent color) */
+.markdown-rendered h1, .cm-header-1 { color: var(--h1-color, var(--heading-color, var(--interactive-accent))) !important; }
+.markdown-rendered h2, .cm-header-2 { color: var(--h2-color, var(--heading-color, var(--interactive-accent))) !important; }
+.markdown-rendered h3, .cm-header-3 { color: var(--h3-color, var(--heading-color, var(--interactive-accent))) !important; }
+.markdown-rendered h4, .cm-header-4 { color: var(--h4-color, var(--heading-color, var(--interactive-accent))) !important; }
+.markdown-rendered h5, .cm-header-5 { color: var(--h5-color, var(--heading-color, var(--interactive-accent))) !important; }
+.markdown-rendered h6, .cm-header-6 { color: var(--h6-color, var(--heading-color, var(--interactive-accent))) !important; }
+.HyperMD-header { color: var(--heading-color, var(--interactive-accent)) !important; }
+
+/* Bold text follows customizable bold color (defaults to active accent color) */
+strong,
+b,
+.cm-strong,
+.markdown-rendered strong,
+.markdown-rendered b {
+  color: var(--bold-color, var(--interactive-accent)) !important;
+  font-weight: 700 !important;
+}
+
+/* Italic text follows customizable italic color (defaults to active accent color) */
+em,
+i,
+.cm-em,
+.markdown-rendered em,
+.markdown-rendered i {
+  color: var(--italic-color, var(--interactive-accent)) !important;
+  font-style: italic !important;
+}
+
+/* Highlight text follows customizable highlight colors */
+mark,
+.cm-highlight,
+.markdown-rendered mark {
+  color: var(--highlight-color, var(--text-normal)) !important;
+  background-color: var(--highlight-bg, rgba(71, 169, 118, 0.25)) !important;
+}
